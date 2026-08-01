@@ -153,7 +153,7 @@ export default {
             }
 
             // 4.5. GET /api/check-status
-            if (path === '/api/check-status') {
+            if (path === '/api/check-status' || path.startsWith('/api/check-status')) {
                 const acc = (url.searchParams.get('account') || '').trim();
                 let existing = codes.find(c => c.assignedAccount && c.assignedAccount.toLowerCase() === acc.toLowerCase());
                 if (existing) {
