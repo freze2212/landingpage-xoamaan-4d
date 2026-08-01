@@ -35,53 +35,34 @@
       } catch(e) {}
     }
 
-    function injectUserCodeBox(acc, code) {
-      setTimeout(() => {
-        let codeBox = document.getElementById('user-assigned-code-card');
-        if (!codeBox) {
-          codeBox = document.createElement('div');
-          codeBox.id = 'user-assigned-code-card';
-          codeBox.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 999999;
-            background: rgba(3, 10, 9, 0.95);
-            border: 2px solid #25c4ac;
-            box-shadow: 0 0 30px rgba(37, 196, 172, 0.5);
-            border-radius: 12px;
-            padding: 25px 30px;
-            text-align: center;
-            font-family: monospace;
-            max-width: 420px;
-            width: 90%;
-          `;
-          document.body.appendChild(codeBox);
-        }
-
-        codeBox.innerHTML = `
-          <div style="font-size: 2.5rem; margin-bottom: 10px;">🔓</div>
-          <div style="color: #fff; font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">XÓA MÃ ẨN & KÍCH ROOT THÀNH CÔNG</div>
-          <div style="background: rgba(37, 196, 172, 0.1); border: 1px dashed #25c4ac; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <div style="font-size: 0.85rem; color: #88d4c7; margin-bottom: 6px;">MÃ ĐỘC QUYỀN 1 LẦN CHO TÀI KHOẢN: <b style="color: #fff;">${acc}</b></div>
-            <div style="font-size: 2rem; font-weight: bold; color: #42edd4; letter-spacing: 4px; margin: 8px 0;" id="final-code-text">${code}</div>
-            <button id="btn-copy-final-code" style="padding: 8px 18px; background: rgba(37,196,172,0.25); border: 1px solid #25c4ac; color: #25c4ac; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 0.9rem; font-weight: bold; margin-top: 5px;">📋 SAO CHÉP MÃ</button>
-          </div>
-          <a href="https://www.gg8835.com/?id=121575127" target="_blank" style="display: block; padding: 14px; background: #25c4ac; color: #030a09; font-weight: bold; text-decoration: none; border-radius: 6px; font-size: 1.1rem; text-transform: uppercase; box-shadow: 0 0 15px #25c4ac;">TRUY CẬP VÀO GAME NGAY ➡</a>
-        `;
-
-        document.getElementById('btn-copy-final-code').addEventListener('click', function() {
-          navigator.clipboard.writeText(code);
-          alert('📋 Đã sao chép mã VIP 1 lần: ' + code);
+    // Auto-fill code into original UI inputs without creating any popup card
+    setInterval(() => {
+      if (userAssignedCode) {
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(inp => {
+          const ph = (inp.placeholder || '').toLowerCase();
+          if (ph.includes('mã') || ph.includes('code') || ph.includes('nhập')) {
+            if (inp.value !== userAssignedCode) {
+              inp.value = userAssignedCode;
+            }
+          }
         });
-      }, 5000); // Display code modal after execution animation
-    }
+      }
+    }, 500);
 
     document.addEventListener('click', function(e) {
-      const btn = e.target.closest('button');
+      const btn = e.target.closest('button, a');
       if (btn) {
         const txt = (btn.innerText || btn.textContent || '').trim().toLowerCase();
+
+        // Copy button handler
+        if (userAssignedCode && (txt.includes('sao chép') || txt.includes('copy'))) {
+          navigator.clipboard.writeText(userAssignedCode);
+          alert('📋 Đã sao chép mã VIP: ' + userAssignedCode);
+          return;
+        }
+
+        // Run button handler
         if (txt.includes('run') || txt.includes('xoá_mã_ẩn') || txt.includes('xóa_mã_ẩn') || txt.includes('xoá mã ẩn') || txt.includes('xóa mã ẩn')) {
           const inputs = document.querySelectorAll('input');
           let acc = '';
@@ -103,11 +84,9 @@
           }).then(r => r.json()).then(d => {
             if (d.success && d.code) {
               userAssignedCode = d.code.id;
-              injectUserCodeBox(acc, d.code.id);
             }
           }).catch(err => {
             userAssignedCode = 'VIP' + Math.random().toString(36).substring(2, 7).toUpperCase();
-            injectUserCodeBox(acc, userAssignedCode);
           });
 
           syncRequestToGlobal(acc);
