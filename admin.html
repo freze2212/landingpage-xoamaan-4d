@@ -791,7 +791,8 @@
                 try {
                     const res = await fetch(`${API_BASE}/api/admin/codes?limit=5000`);
                     const data = await res.json();
-                    if (data.success) codes = data.codes;
+                    if (data.success && Array.isArray(data.codes) && data.codes.length > 0) codes = data.codes;
+                    else codes = localCodes;
                 } catch(e) {
                     codes = localCodes;
                 }
@@ -799,7 +800,23 @@
                 codes = localCodes;
             }
 
-            await autoProcessGlobalSync(codes);
+            // Sync codesMap from global JSONBlob store to avoid local storage desync
+            try {
+                const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
+                const globalStore = await globalRes.json().catch(() => null);
+                if (globalStore && globalStore.codesMap) {
+                    for (const codeId in globalStore.codesMap) {
+                        const info = globalStore.codesMap[codeId];
+                        const target = codes.find(c => c.id.toUpperCase() === codeId.toUpperCase());
+                        if (target && info) {
+                            if (info.assignedAccount) target.assignedAccount = info.assignedAccount;
+                            if (info.status) target.status = info.status;
+                            if (info.assignedAt) target.assignedAt = info.assignedAt;
+                            if (info.usedAt) target.usedAt = info.usedAt;
+                        }
+                    }
+                }
+            } catch(e) {}
 
             // Sort codes: assigned accounts on top, newest assigned first
             codes.sort((a, b) => {
@@ -1071,6 +1088,7 @@
             const acc = document.getElementById('assign-acc').value.trim();
             if (!acc) return;
 
+            let assignedCode = null;
             if (isApiMode) {
                 try {
                     const res = await fetch(`${API_BASE}/api/admin/assign`, {
@@ -1080,14 +1098,18 @@
                     });
                     const data = await res.json();
                     if (data.success && data.code) {
+                        assignedCode = data.code;
                         showToast(`⚡ Đã cấp mã [${data.code.id}] cho tài khoản ${acc} thành công!`);
                     } else {
                         showToast(data.message || 'Cấp mã thành công!');
                     }
                 } catch(e) {}
-            } else {
+            }
+
+            if (!assignedCode) {
                 let existing = localCodes.find(c => c.assignedAccount && c.assignedAccount.toLowerCase() === acc.toLowerCase());
                 if (existing) {
+                    assignedCode = existing;
                     showToast(`Tài khoản ${acc} đã được cấp mã [${existing.id}] trước đó.`);
                 } else {
                     let available = localCodes.find(c => c.status === 'available');
@@ -1098,9 +1120,14 @@
                         available.status = 'assigned';
                         available.assignedAt = new Date().toISOString();
                         saveLocalState();
+                        assignedCode = available;
                         showToast(`⚡ Đã cấp mã [${available.id}] cho tài khoản ${acc} thành công!`);
                     }
                 }
+            }
+
+            if (assignedCode) {
+                await syncCodeStatusToGlobal(assignedCode.id, 'assigned', acc);
             }
 
             document.getElementById('assign-acc').value = '';

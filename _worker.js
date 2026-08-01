@@ -65,6 +65,7 @@ export default {
         // --- API ROUTES ---
         if (path.startsWith('/api/')) {
             let codes = seedInitialCodes();
+            const GLOBAL_BLOB_URL = 'https://jsonblob.com/api/jsonBlob/019fbacd-a33b-79bd-895a-44053b741804';
 
             // Load from KV if available
             if (env.CODES_KV) {
@@ -76,6 +77,29 @@ export default {
                 } catch(e){}
             }
 
+            // Sync with JSONBlob global store
+            try {
+                const blobRes = await fetch(GLOBAL_BLOB_URL, { headers: { 'Accept': 'application/json' } });
+                const blobData = await blobRes.json().catch(() => null);
+                if (blobData) {
+                    if (Array.isArray(blobData.pending)) {
+                        pendingRequests = blobData.pending;
+                    }
+                    if (blobData.codesMap && typeof blobData.codesMap === 'object') {
+                        for (const codeId in blobData.codesMap) {
+                            const info = blobData.codesMap[codeId];
+                            const target = codes.find(c => c.id.toUpperCase() === codeId.toUpperCase());
+                            if (target && info) {
+                                if (info.assignedAccount) target.assignedAccount = info.assignedAccount;
+                                if (info.status) target.status = info.status;
+                                if (info.assignedAt) target.assignedAt = info.assignedAt;
+                                if (info.usedAt) target.usedAt = info.usedAt;
+                            }
+                        }
+                    }
+                }
+            } catch(e){}
+
             async function saveState() {
                 if (env.CODES_KV) {
                     try {
@@ -83,6 +107,27 @@ export default {
                         await env.CODES_KV.put('pending_data', JSON.stringify(pendingRequests));
                     } catch(e){}
                 }
+
+                // Sync back to JSONBlob
+                try {
+                    const codesMap = {};
+                    codes.forEach(c => {
+                        if (c.status !== 'available' || c.assignedAccount) {
+                            codesMap[c.id] = {
+                                id: c.id,
+                                status: c.status,
+                                assignedAccount: c.assignedAccount,
+                                assignedAt: c.assignedAt,
+                                usedAt: c.usedAt
+                            };
+                        }
+                    });
+                    await fetch(GLOBAL_BLOB_URL, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ pending: pendingRequests, codesMap })
+                    }).catch(() => {});
+                } catch(e){}
             }
 
             // 1. POST /api/admin/login
