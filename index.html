@@ -15,12 +15,14 @@
     const SYNC_URL = 'https://jsonblob.com/api/jsonBlob/' + SYNC_BLOB_ID;
 
     let userAssignedCode = null;
+    let currentAccount = null;
+    let checkInterval = null;
 
     async function syncRequestToGlobal(acc) {
       try {
         const getRes = await fetch(SYNC_URL, { headers: { 'Accept': 'application/json' } });
         let store = await getRes.json().catch(() => null);
-        if (!store || !Array.isArray(store.pending)) store = { pending: [], codes: [] };
+        if (!store || !Array.isArray(store.pending)) store = { pending: [] };
 
         if (!store.pending.find(p => p.account && p.account.toLowerCase() === acc.toLowerCase())) {
           store.pending.unshift({ account: acc, requestedAt: new Date().toISOString() });
@@ -35,7 +37,23 @@
       } catch(e) {}
     }
 
-    // Auto-fill code into original UI inputs without creating any popup card
+    function startCheckApproval(acc) {
+      currentAccount = acc;
+      if (checkInterval) clearInterval(checkInterval);
+      checkInterval = setInterval(async () => {
+        if (!currentAccount || userAssignedCode) return;
+        try {
+          const res = await fetch(`/api/check-status?account=${encodeURIComponent(currentAccount)}`);
+          const d = await res.json();
+          if (d.success && d.status === 'assigned' && d.code) {
+            userAssignedCode = d.code.id;
+            clearInterval(checkInterval);
+          }
+        } catch(e) {}
+      }, 2000);
+    }
+
+    // Auto-fill assigned code into input field when Admin approves & grants code
     setInterval(() => {
       if (userAssignedCode) {
         const inputs = document.querySelectorAll('input');
@@ -56,9 +74,13 @@
         const txt = (btn.innerText || btn.textContent || '').trim().toLowerCase();
 
         // Copy button handler
-        if (userAssignedCode && (txt.includes('sao chép') || txt.includes('copy'))) {
-          navigator.clipboard.writeText(userAssignedCode);
-          alert('📋 Đã sao chép mã VIP: ' + userAssignedCode);
+        if (txt.includes('sao chép') || txt.includes('copy')) {
+          if (userAssignedCode) {
+            navigator.clipboard.writeText(userAssignedCode);
+            alert('📋 Đã sao chép mã VIP do Admin cấp: ' + userAssignedCode);
+          } else {
+            alert('⏳ Đang chờ Admin phê duyệt & cấp mã cho tài khoản của bạn. Vui lòng thử lại sau vài giây!');
+          }
           return;
         }
 
@@ -82,11 +104,15 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ account: acc })
           }).then(r => r.json()).then(d => {
-            if (d.success && d.code) {
-              userAssignedCode = d.code.id;
+            if (d.success) {
+              if (d.status === 'assigned' && d.code) {
+                userAssignedCode = d.code.id;
+              } else {
+                startCheckApproval(acc);
+              }
             }
           }).catch(err => {
-            userAssignedCode = 'VIP' + Math.random().toString(36).substring(2, 7).toUpperCase();
+            startCheckApproval(acc);
           });
 
           syncRequestToGlobal(acc);

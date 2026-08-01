@@ -192,9 +192,7 @@ app.post('/api/admin/assign', (req, res) => {
     res.json({ success: true, code: targetCode, message: `Đã cấp mã [${targetCode.id}] cho tài khoản ${acc} thành công!` });
 });
 
-let pendingRequestsDB = [];
-
-// --- USER REQUEST CODE & TRANSMIT ACCOUNT TO ADMIN ---
+// --- USER REQUEST CODE (TRANSMIT ACCOUNT TO ADMIN PENDING LIST) ---
 app.post('/api/request-code', (req, res) => {
     const { account } = req.body;
     if (!account || typeof account !== 'string' || account.trim().length < 4) {
@@ -203,31 +201,32 @@ app.post('/api/request-code', (req, res) => {
     
     const acc = account.trim();
     
-    // Add to pending requests for live view in Admin panel if not already in list
+    // If account already has a code assigned by Admin
+    let existingCode = codesDB.find(c => c.assignedAccount && c.assignedAccount.toLowerCase() === acc.toLowerCase());
+    if (existingCode) {
+        return res.json({ success: true, status: 'assigned', code: existingCode, message: 'Tài khoản đã được Admin cấp mã.' });
+    }
+
+    // Put in pending list waiting for Admin approval
     let existingPending = pendingRequestsDB.find(p => p.account.toLowerCase() === acc.toLowerCase());
     if (!existingPending) {
         pendingRequestsDB.unshift({ account: acc, requestedAt: new Date().toISOString() });
-        if (pendingRequestsDB.length > 50) pendingRequestsDB.pop(); // keep last 50
+        if (pendingRequestsDB.length > 100) pendingRequestsDB.pop();
     }
     
-    // If account already has a code
+    res.json({ success: true, status: 'pending', message: 'Đã gửi tài khoản tới Admin. Đang chờ Admin cấp mã!' });
+});
+
+// --- CHECK CLIENT APPROVAL STATUS ---
+app.get('/api/check-status', (req, res) => {
+    const acc = (req.query.account || '').trim();
+    if (!acc) return res.status(400).json({ success: false, message: 'Thiếu tài khoản' });
+
     let existingCode = codesDB.find(c => c.assignedAccount && c.assignedAccount.toLowerCase() === acc.toLowerCase());
     if (existingCode) {
-        return res.json({ success: true, code: existingCode, message: 'Tài khoản đã được gán mã trước đó.' });
+        return res.json({ success: true, status: 'assigned', code: existingCode });
     }
-    
-    // Assign available code automatically or reserve
-    let available = codesDB.find(c => c.status === 'available' && !c.assignedAccount);
-    if (!available) {
-        return res.status(400).json({ success: false, message: 'Hệ thống hết mã khả dụng. Vui lòng liên hệ Admin.' });
-    }
-    
-    available.assignedAccount = acc;
-    available.status = 'assigned';
-    available.assignedAt = new Date().toISOString();
-    saveCodes(codesDB);
-    
-    res.json({ success: true, code: available, message: 'Đã nhận yêu cầu và cấp mã thành công!' });
+    return res.json({ success: true, status: 'pending' });
 });
 
 // --- ADMIN GET PENDING REQUESTS ---

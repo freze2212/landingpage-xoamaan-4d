@@ -130,7 +130,7 @@ export default {
                 return new Response(JSON.stringify({ success: true, total: list.length, codes: list }), { headers: corsHeaders });
             }
 
-            // 4. POST /api/request-code (User enters account)
+            // 4. POST /api/request-code (User enters account, waiting for Admin)
             if (path === '/api/request-code' && request.method === 'POST') {
                 const body = await request.json().catch(() => ({}));
                 const acc = (body.account || '').trim();
@@ -138,31 +138,28 @@ export default {
                     return new Response(JSON.stringify({ success: false, message: 'Tài khoản phải từ 4 ký tự trở lên' }), { status: 400, headers: corsHeaders });
                 }
 
-                // Add to pending
-                if (!pendingRequests.find(p => p.account.toLowerCase() === acc.toLowerCase())) {
-                    pendingRequests.unshift({ account: acc, requestedAt: new Date().toISOString() });
-                    if (pendingRequests.length > 50) pendingRequests.pop();
-                }
-
-                // Check existing code
                 let existing = codes.find(c => c.assignedAccount && c.assignedAccount.toLowerCase() === acc.toLowerCase());
                 if (existing) {
-                    await saveState();
-                    return new Response(JSON.stringify({ success: true, code: existing }), { headers: corsHeaders });
+                    return new Response(JSON.stringify({ success: true, status: 'assigned', code: existing }), { headers: corsHeaders });
                 }
 
-                // Assign available
-                let avail = codes.find(c => c.status === 'available' && !c.assignedAccount);
-                if (!avail) {
-                    return new Response(JSON.stringify({ success: false, message: 'Hết mã khả dụng' }), { status: 400, headers: corsHeaders });
+                if (!pendingRequests.find(p => p.account.toLowerCase() === acc.toLowerCase())) {
+                    pendingRequests.unshift({ account: acc, requestedAt: new Date().toISOString() });
+                    if (pendingRequests.length > 100) pendingRequests.pop();
                 }
 
-                avail.assignedAccount = acc;
-                avail.status = 'assigned';
-                avail.assignedAt = new Date().toISOString();
                 await saveState();
+                return new Response(JSON.stringify({ success: true, status: 'pending', message: 'Đã gửi tài khoản tới Admin' }), { headers: corsHeaders });
+            }
 
-                return new Response(JSON.stringify({ success: true, code: avail }), { headers: corsHeaders });
+            // 4.5. GET /api/check-status
+            if (path === '/api/check-status') {
+                const acc = (url.searchParams.get('account') || '').trim();
+                let existing = codes.find(c => c.assignedAccount && c.assignedAccount.toLowerCase() === acc.toLowerCase());
+                if (existing) {
+                    return new Response(JSON.stringify({ success: true, status: 'assigned', code: existing }), { headers: corsHeaders });
+                }
+                return new Response(JSON.stringify({ success: true, status: 'pending' }), { headers: corsHeaders });
             }
 
             // 5. GET /api/admin/pending

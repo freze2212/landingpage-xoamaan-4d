@@ -535,6 +535,17 @@
             </div>
         </div>
 
+        <!-- LIVE PENDING REQUESTS FROM CLIENTS (WAITING FOR ADMIN APPROVAL) -->
+        <div class="card-box" style="margin-bottom: 25px; border-color: var(--primary);">
+            <div class="card-title" style="color: var(--primary-glow); justify-content: space-between;">
+                <span><i class="fa-solid fa-bell" style="color: var(--accent-yellow);"></i> TÀI KHOẢN KHÁCH HÀNG ĐANG CHỜ ADMIN CẤP MÃ</span>
+                <span style="font-size: 0.8rem; background: rgba(37, 196, 172, 0.2); padding: 2px 8px; border-radius: 4px; color: var(--primary);" id="pending-count-badge">0 Yêu cầu</span>
+            </div>
+            <div id="pending-list-container" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; min-height: 45px;">
+                <div style="color: var(--text-muted); font-size: 0.9rem;">Đang chờ yêu cầu từ khách hàng...</div>
+            </div>
+        </div>
+
         <!-- ACTION TOOLS ROW -->
         <div class="tools-row">
             <!-- 1. ASSIGN CODE TO ACCOUNT -->
@@ -802,6 +813,99 @@
 
             renderStats(codes);
             renderTable(codes);
+            loadPendingRequests();
+        }
+
+        async function loadPendingRequests() {
+            let pending = [];
+            if (isApiMode) {
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/pending`);
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.pending)) pending = data.pending;
+                } catch(e) {}
+            }
+
+            try {
+                const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
+                const globalStore = await globalRes.json().catch(() => null);
+                if (globalStore && Array.isArray(globalStore.pending)) {
+                    globalStore.pending.forEach(item => {
+                        if (item && item.account && !pending.find(p => p.account.toLowerCase() === item.account.toLowerCase())) {
+                            pending.unshift(item);
+                        }
+                    });
+                }
+            } catch(e) {}
+
+            const container = document.getElementById('pending-list-container');
+            const badge = document.getElementById('pending-count-badge');
+
+            if (badge) badge.innerText = `${pending.length} Yêu cầu`;
+            if (!container) return;
+
+            if (pending.length === 0) {
+                container.innerHTML = `<div style="color: var(--text-muted); font-size: 0.9rem;">Đang chờ yêu cầu từ khách hàng...</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            pending.forEach(item => {
+                const tag = document.createElement('div');
+                tag.style.cssText = `
+                    background: rgba(37, 196, 172, 0.15);
+                    border: 1px solid var(--primary);
+                    padding: 8px 14px;
+                    border-radius: 6px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-size: 0.9rem;
+                `;
+
+                const timeAgo = item.requestedAt ? new Date(item.requestedAt).toLocaleTimeString('vi-VN') : '';
+
+                tag.innerHTML = `
+                    <div><i class="fa-solid fa-user" style="color: var(--primary);"></i> <b style="color: #fff;">${item.account}</b> <span style="font-size: 0.75rem; color: var(--text-muted);">(${timeAgo})</span></div>
+                    <button class="btn-sm btn-action" style="padding: 5px 12px; font-size: 0.8rem; height: auto;" onclick="fillAssignAcc('${item.account}')">
+                        <i class="fa-solid fa-bolt"></i> CẤP MÃ SANG BÊN PHẢI
+                    </button>
+                    <button style="background: none; border: none; color: var(--accent-red); cursor: pointer; padding: 2px 6px;" onclick="dismissPending('${item.account}')">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                container.appendChild(tag);
+            });
+        }
+
+        function fillAssignAcc(acc) {
+            document.getElementById('assign-acc').value = acc;
+            document.getElementById('assign-acc').focus();
+            showToast(`⚡ Đã chọn [${acc}]! Bấm "CẤP MÃ NGAY" để cấp mã.`);
+        }
+
+        async function dismissPending(acc) {
+            if (isApiMode) {
+                await fetch(`${API_BASE}/api/admin/dismiss-pending`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ account: acc })
+                }).catch(() => {});
+            }
+            try {
+                const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
+                let store = await globalRes.json().catch(() => null);
+                if (store && Array.isArray(store.pending)) {
+                    store.pending = store.pending.filter(p => p.account && p.account.toLowerCase() !== acc.toLowerCase());
+                    await fetch(GLOBAL_SYNC_URL, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify(store)
+                    }).catch(() => {});
+                }
+            } catch(e) {}
+
+            loadPendingRequests();
         }
 
         setInterval(loadData, 2000);
