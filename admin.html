@@ -731,7 +731,8 @@
             try {
                 const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
                 const globalStore = await globalRes.json().catch(() => null);
-                if (globalStore && Array.isArray(globalStore.pending)) {
+                if (globalStore && Array.isArray(globalStore.pending) && globalStore.pending.length > 0) {
+                    let changed = false;
                     for (const item of globalStore.pending) {
                         if (item && item.account) {
                             const acc = item.account.trim();
@@ -743,6 +744,7 @@
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({ account: acc })
                                     }).catch(() => {});
+                                    changed = true;
                                 } else {
                                     let avail = localCodes.find(c => c.status === 'available');
                                     if (avail) {
@@ -750,10 +752,22 @@
                                         avail.status = 'assigned';
                                         avail.assignedAt = new Date().toISOString();
                                         saveLocalState();
+                                        changed = true;
                                     }
                                 }
+                            } else {
+                                changed = true;
                             }
                         }
+                    }
+
+                    if (changed) {
+                        globalStore.pending = [];
+                        await fetch(GLOBAL_SYNC_URL, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify(globalStore)
+                        }).catch(() => {});
                     }
                 }
             } catch(e) {}
@@ -810,6 +824,9 @@
         }
 
         function renderTable(codes) {
+            const searchInput = document.getElementById('search-input');
+            const searchQuery = searchInput ? searchInput.value.trim() : '';
+
             let filtered = [...codes];
 
             // Always sort assigned accounts FIRST at top of table, ordered by newest timestamp DESC
@@ -864,6 +881,7 @@
                     <td style="text-align: right;">
                         <button class="btn-sm btn-copy" onclick="copyCode('${item.id}')"><i class="fa-regular fa-copy"></i> Copy Code</button>
                         ${item.status !== 'used' ? `<button class="btn-sm btn-mark-used" onclick="markUsed('${item.id}')"><i class="fa-solid fa-check"></i> Đánh dấu dùng</button>` : ''}
+                        <button class="btn-sm" onclick="deleteCode('${item.id}', '${item.assignedAccount || ''}')" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444; margin-left: 6px; cursor: pointer;"><i class="fa-solid fa-trash"></i> Xóa</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -893,6 +911,39 @@
                 }
             }
             showToast(`✅ Đã đánh dấu mã [${codeId}] là ĐÃ SỬ DỤNG`);
+            loadData();
+        }
+
+        async function deleteCode(codeId, acc) {
+            if (!confirm(`Bạn có chắc chắn muốn XÓA VĨNH VIỄN mã [${codeId}] ${acc ? 'của tài khoản ' + acc : ''}?`)) return;
+
+            if (isApiMode) {
+                await fetch(`${API_BASE}/api/admin/delete-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codeId })
+                }).catch(() => {});
+            } else {
+                localCodes = localCodes.filter(c => c.id !== codeId);
+                saveLocalState();
+            }
+
+            if (acc) {
+                try {
+                    const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
+                    let store = await globalRes.json().catch(() => null);
+                    if (store && Array.isArray(store.pending)) {
+                        store.pending = store.pending.filter(p => p.account && p.account.toLowerCase() !== acc.toLowerCase());
+                        await fetch(GLOBAL_SYNC_URL, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify(store)
+                        }).catch(() => {});
+                    }
+                } catch(e) {}
+            }
+
+            showToast(`🗑️ Đã xóa vĩnh viễn mã [${codeId}]`);
             loadData();
         }
 

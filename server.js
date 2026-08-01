@@ -273,21 +273,16 @@ app.post('/api/claim-code', (req, res) => {
     res.json({ success: true, code: available, message: 'Cấp mã thành công cho tài khoản.' });
 });
 
-// --- USER/ADMIN MARK CODE AS USED ---
 app.post('/api/use-code', (req, res) => {
     const { codeId } = req.body;
     const target = codesDB.find(c => c.id === codeId);
     if (!target) {
         return res.status(404).json({ success: false, message: 'Mã không tồn tại' });
     }
-    if (target.status === 'used') {
-        return res.status(400).json({ success: false, message: 'Mã này đã được sử dụng trước đó và không thể tái sử dụng.' });
-    }
     
     target.status = 'used';
     target.usedAt = new Date().toISOString();
     saveCodes(codesDB);
-    
     res.json({ success: true, code: target, message: 'Đã kích hoạt và sử dụng mã thành công.' });
 });
 

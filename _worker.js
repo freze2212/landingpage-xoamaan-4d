@@ -214,6 +214,25 @@ export default {
                 }
                 return new Response(JSON.stringify({ success: false, message: 'Mã không tồn tại' }), { status: 404, headers: corsHeaders });
             }
+
+            // 9. POST /api/admin/delete-code
+            if (path === '/api/admin/delete-code' && request.method === 'POST') {
+                const body = await request.json().catch(() => ({}));
+                const codeId = body.codeId;
+                if (codeId) {
+                    const idx = codes.findIndex(c => c.id === codeId);
+                    if (idx !== -1) {
+                        const removed = codes[idx];
+                        codes.splice(idx, 1);
+                        if (removed && removed.assignedAccount) {
+                            pendingRequests = pendingRequests.filter(p => p.account.toLowerCase() !== removed.assignedAccount.toLowerCase());
+                        }
+                        await saveState();
+                        return new Response(JSON.stringify({ success: true, message: 'Đã xóa mã thành công' }), { headers: corsHeaders });
+                    }
+                }
+                return new Response(JSON.stringify({ success: false, message: 'Mã không tồn tại' }), { status: 404, headers: corsHeaders });
+            }
         }
 
         // --- STATIC ASSETS ---
