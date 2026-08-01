@@ -90,8 +90,8 @@ export default {
                             const info = blobData.codesMap[codeId];
                             const target = codes.find(c => c.id.toUpperCase() === codeId.toUpperCase());
                             if (target && info) {
-                                if (info.assignedAccount) target.assignedAccount = info.assignedAccount;
-                                if (info.status) target.status = info.status;
+                                target.assignedAccount = info.assignedAccount || null;
+                                target.status = info.status || 'available';
                                 if (info.assignedAt) target.assignedAt = info.assignedAt;
                                 if (info.usedAt) target.usedAt = info.usedAt;
                             }
