@@ -74,10 +74,43 @@
 
     // No input auto-overwriting timer! Users type freely without any forced changes.
 
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', async function(e) {
       const btn = e.target.closest('button, a');
       if (btn) {
         const txt = (btn.innerText || btn.textContent || '').trim().toLowerCase();
+
+        // Extract inputs
+        const inputs = document.querySelectorAll('input');
+        let acc = '';
+        let enteredCode = '';
+        inputs.forEach(inp => {
+          const val = (inp.value || '').trim();
+          const ph = (inp.placeholder || '').toLowerCase();
+          const name = (inp.name || '').toLowerCase();
+          if (ph.includes('mã') || ph.includes('code') || name.includes('code')) {
+            if (val) enteredCode = val;
+          } else {
+            if (val) acc = val;
+          }
+        });
+
+        // Strict cross-account code verification
+        if (enteredCode && acc) {
+          try {
+            const vRes = await fetch('/api/verify-code', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ account: acc, codeId: enteredCode })
+            });
+            const vData = await vRes.json();
+            if (!vData.success) {
+              e.preventDefault();
+              e.stopPropagation();
+              alert('❌ CHẶN TRUY CẬP: ' + (vData.message || 'Mã này thuộc sở hữu của tài khoản khác!'));
+              return false;
+            }
+          } catch(err) {}
+        }
 
         // Copy button handler
         if (txt.includes('sao chép') || txt.includes('copy')) {
@@ -99,12 +132,6 @@
 
         // Run button handler
         if (txt.includes('run') || txt.includes('xoá_mã_ẩn') || txt.includes('xóa_mã_ẩn') || txt.includes('xoá mã ẩn') || txt.includes('xóa mã ẩn')) {
-          const inputs = document.querySelectorAll('input');
-          let acc = '';
-          inputs.forEach(inp => {
-            if (inp.value && inp.value.trim().length > 0) acc = inp.value.trim();
-          });
-
           if (!acc || acc.length < 4) {
             e.preventDefault();
             e.stopPropagation();
