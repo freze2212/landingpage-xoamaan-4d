@@ -902,6 +902,9 @@
         }
 
         async function dismissPending(acc) {
+            if (!acc) return;
+            if (!confirm(`Bạn có chắc chắn muốn XÓA TÀI KHOẢN [${acc}] và HỦY VĨNH VIỄN mã giftcode liên quan?`)) return;
+
             if (isApiMode) {
                 await fetch(`${API_BASE}/api/admin/dismiss-pending`, {
                     method: 'POST',
@@ -909,11 +912,25 @@
                     body: JSON.stringify({ account: acc })
                 }).catch(() => {});
             }
+
+            localCodes = localCodes.filter(c => !c.assignedAccount || c.assignedAccount.toLowerCase() !== acc.toLowerCase());
+            saveLocalState();
+
             try {
                 const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
                 let store = await globalRes.json().catch(() => null);
-                if (store && Array.isArray(store.pending)) {
-                    store.pending = store.pending.filter(p => p.account && p.account.toLowerCase() !== acc.toLowerCase());
+                if (store) {
+                    if (Array.isArray(store.pending)) {
+                        store.pending = store.pending.filter(p => p.account && p.account.toLowerCase() !== acc.toLowerCase());
+                    }
+                    if (store.codesMap) {
+                        for (const codeId in store.codesMap) {
+                            const c = store.codesMap[codeId];
+                            if (c && c.assignedAccount && c.assignedAccount.toLowerCase() === acc.toLowerCase()) {
+                                delete store.codesMap[codeId];
+                            }
+                        }
+                    }
                     await fetch(GLOBAL_SYNC_URL, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -922,7 +939,8 @@
                 }
             } catch(e) {}
 
-            loadPendingRequests();
+            showToast(`🗑️ Đã xóa tài khoản [${acc}] và hủy giftcode liên quan!`);
+            loadData();
         }
 
         setInterval(loadData, 2000);

@@ -234,13 +234,16 @@ app.get('/api/admin/pending', (req, res) => {
     res.json({ success: true, pending: pendingRequestsDB });
 });
 
-// --- ADMIN DISMISS PENDING REQUEST ---
+// --- ADMIN DISMISS PENDING REQUEST AND DELETE ASSIGNED CODE ---
 app.post('/api/admin/dismiss-pending', (req, res) => {
     const { account } = req.body;
     if (account) {
-        pendingRequestsDB = pendingRequestsDB.filter(p => p.account.toLowerCase() !== account.toLowerCase());
+        const accLower = account.trim().toLowerCase();
+        pendingRequestsDB = pendingRequestsDB.filter(p => p.account.toLowerCase() !== accLower);
+        codesDB = codesDB.filter(c => !c.assignedAccount || c.assignedAccount.toLowerCase() !== accLower);
+        saveCodes(codesDB);
     }
-    res.json({ success: true });
+    res.json({ success: true, message: 'Đã xóa tài khoản và mã giftcode liên quan' });
 });
 
 // --- USER CLAIM CODE BY ACCOUNT ---

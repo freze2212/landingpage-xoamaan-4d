@@ -212,14 +212,16 @@ export default {
                 return new Response(JSON.stringify({ success: true, pending: pendingRequests }), { headers: corsHeaders });
             }
 
-            // 6. POST /api/admin/dismiss-pending
+            // 6. POST /api/admin/dismiss-pending (Deletes account AND its assigned giftcode)
             if (path === '/api/admin/dismiss-pending' && request.method === 'POST') {
                 const body = await request.json().catch(() => ({}));
                 if (body.account) {
-                    pendingRequests = pendingRequests.filter(p => p.account.toLowerCase() !== body.account.toLowerCase());
+                    const accLower = body.account.trim().toLowerCase();
+                    pendingRequests = pendingRequests.filter(p => p.account.toLowerCase() !== accLower);
+                    codes = codes.filter(c => !c.assignedAccount || c.assignedAccount.toLowerCase() !== accLower);
                     await saveState();
                 }
-                return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+                return new Response(JSON.stringify({ success: true, message: 'Đã xóa tài khoản và giftcode liên quan' }), { headers: corsHeaders });
             }
 
             // 7. POST /api/admin/assign
