@@ -999,21 +999,48 @@
             showToast(`📋 Đã sao chép mã: ${code}`);
         }
 
+        async function syncCodeStatusToGlobal(codeId, status, acc) {
+            try {
+                const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
+                let store = await globalRes.json().catch(() => null);
+                if (!store) store = {};
+                if (!store.codesMap) store.codesMap = {};
+
+                store.codesMap[codeId] = {
+                    id: codeId,
+                    status: status,
+                    assignedAccount: acc || null,
+                    updatedAt: new Date().toISOString()
+                };
+
+                if (status === 'deleted' && acc && Array.isArray(store.pending)) {
+                    store.pending = store.pending.filter(p => p.account && p.account.toLowerCase() !== acc.toLowerCase());
+                }
+
+                await fetch(GLOBAL_SYNC_URL, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(store)
+                }).catch(() => {});
+            } catch(e) {}
+        }
+
         async function markUsed(codeId) {
+            const item = localCodes.find(c => c.id === codeId);
+            let acc = item ? item.assignedAccount : '';
             if (isApiMode) {
                 await fetch(`${API_BASE}/api/use-code`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ codeId })
-                });
-            } else {
-                const item = localCodes.find(c => c.id === codeId);
-                if (item) {
-                    item.status = 'used';
-                    item.usedAt = new Date().toISOString();
-                    saveLocalState();
-                }
+                }).catch(() => {});
             }
+            if (item) {
+                item.status = 'used';
+                item.usedAt = new Date().toISOString();
+                saveLocalState();
+            }
+            await syncCodeStatusToGlobal(codeId, 'used', acc);
             showToast(`✅ Đã đánh dấu mã [${codeId}] là ĐÃ SỬ DỤNG`);
             loadData();
         }
@@ -1033,21 +1060,7 @@
             localCodes = localCodes.filter(c => c.id !== codeId);
             saveLocalState();
 
-            if (acc) {
-                try {
-                    const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
-                    let store = await globalRes.json().catch(() => null);
-                    if (store && Array.isArray(store.pending)) {
-                        store.pending = store.pending.filter(p => p.account && p.account.toLowerCase() !== acc.toLowerCase());
-                        await fetch(GLOBAL_SYNC_URL, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                            body: JSON.stringify(store)
-                        }).catch(() => {});
-                    }
-                } catch(e) {}
-            }
-
+            await syncCodeStatusToGlobal(codeId, 'deleted', acc);
             showToast(`🗑️ Đã xóa vĩnh viễn mã [${codeId}]`);
             loadData();
         }

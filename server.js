@@ -285,6 +285,36 @@ app.post('/api/use-code', (req, res) => {
     res.json({ success: true, code: target, message: 'Đã kích hoạt và sử dụng mã thành công.' });
 });
 
+// --- VERIFY CODE OWNERSHIP AND USAGE STATUS ---
+app.post('/api/verify-code', (req, res) => {
+    const { account, codeId } = req.body;
+    if (!codeId) return res.status(400).json({ success: false, message: 'Thiếu mã giftcode' });
+    
+    const acc = (account || '').trim().toLowerCase();
+    const target = codesDB.find(c => c.id.toUpperCase() === codeId.trim().toUpperCase());
+
+    if (!target) {
+        return res.status(404).json({ success: false, message: `Mã ${codeId} không tồn tại!` });
+    }
+
+    if (target.status === 'used') {
+        return res.status(400).json({ success: false, message: `Mã ${codeId} đã được sử dụng trước đó!` });
+    }
+
+    if (target.status === 'deleted') {
+        return res.status(400).json({ success: false, message: `Mã ${codeId} đã bị xóa khỏi hệ thống!` });
+    }
+
+    if (target.assignedAccount && target.assignedAccount.toLowerCase() !== acc) {
+        return res.status(403).json({ 
+            success: false, 
+            message: `Mã ${codeId} đã được cấp cho tài khoản [${target.assignedAccount}]. Tài khoản [${acc}] không có quyền sử dụng mã này!` 
+        });
+    }
+
+    res.json({ success: true, code: target, message: 'Mã hợp lệ' });
+});
+
 // --- ADMIN DELETE CODE ---
 app.post('/api/admin/delete-code', (req, res) => {
     const { codeId } = req.body;

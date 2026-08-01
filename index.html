@@ -42,12 +42,31 @@
       if (checkInterval) clearInterval(checkInterval);
       checkInterval = setInterval(async () => {
         if (!currentAccount || userAssignedCode) return;
+
+        // Check local backend API
         try {
           const res = await fetch(`/api/check-status?account=${encodeURIComponent(currentAccount)}`);
           const d = await res.json();
           if (d.success && d.status === 'assigned' && d.code) {
             userAssignedCode = d.code.id;
             clearInterval(checkInterval);
+            return;
+          }
+        } catch(e) {}
+
+        // Check global sync store (jsonblob)
+        try {
+          const globalRes = await fetch(SYNC_URL, { headers: { 'Accept': 'application/json' } });
+          const store = await globalRes.json().catch(() => null);
+          if (store && store.codesMap) {
+            for (const key in store.codesMap) {
+              const c = store.codesMap[key];
+              if (c && c.assignedAccount && c.assignedAccount.toLowerCase() === currentAccount.toLowerCase() && c.status === 'assigned') {
+                userAssignedCode = c.id;
+                clearInterval(checkInterval);
+                return;
+              }
+            }
           }
         } catch(e) {}
       }, 2000);

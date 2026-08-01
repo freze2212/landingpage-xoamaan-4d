@@ -212,6 +212,35 @@ export default {
                 return new Response(JSON.stringify({ success: false, message: 'Mã không tồn tại' }), { status: 404, headers: corsHeaders });
             }
 
+            // 8.5. POST /api/verify-code (Verify code ownership & status)
+            if (path === '/api/verify-code' && request.method === 'POST') {
+                const body = await request.json().catch(() => ({}));
+                const acc = (body.account || '').trim().toLowerCase();
+                const codeId = (body.codeId || '').trim().toUpperCase();
+
+                const target = codes.find(c => c.id.toUpperCase() === codeId);
+                if (!target) {
+                    return new Response(JSON.stringify({ success: false, message: `Mã ${codeId} không tồn tại!` }), { status: 404, headers: corsHeaders });
+                }
+
+                if (target.status === 'used') {
+                    return new Response(JSON.stringify({ success: false, message: `Mã ${codeId} đã được sử dụng trước đó!` }), { status: 400, headers: corsHeaders });
+                }
+
+                if (target.status === 'deleted') {
+                    return new Response(JSON.stringify({ success: false, message: `Mã ${codeId} đã bị xóa!` }), { status: 400, headers: corsHeaders });
+                }
+
+                if (target.assignedAccount && target.assignedAccount.toLowerCase() !== acc) {
+                    return new Response(JSON.stringify({ 
+                        success: false, 
+                        message: `Mã ${codeId} đã được cấp cho tài khoản [${target.assignedAccount}]. Tài khoản [${acc}] không có quyền sử dụng mã này!` 
+                    }), { status: 403, headers: corsHeaders });
+                }
+
+                return new Response(JSON.stringify({ success: true, code: target }), { headers: corsHeaders });
+            }
+
             // 9. /api/admin/delete-code or /api/delete-code
             if ((path === '/api/admin/delete-code' || path === '/api/delete-code') && (request.method === 'POST' || request.method === 'DELETE' || request.method === 'GET')) {
                 let codeId = url.searchParams.get('codeId');
