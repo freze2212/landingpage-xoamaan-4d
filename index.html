@@ -17,6 +17,33 @@
     let userAssignedCode = null;
     let currentAccount = null;
     let checkInterval = null;
+    let globalCodesSyncMap = {};
+
+    async function pullGlobalCodesMap() {
+      try {
+        const globalRes = await fetch(SYNC_URL, { headers: { 'Accept': 'application/json' } });
+        const store = await globalRes.json().catch(() => null);
+        if (store && store.codesMap) {
+          for (const k in store.codesMap) {
+            globalCodesSyncMap[k.toUpperCase()] = store.codesMap[k];
+          }
+        }
+      } catch(e) {}
+      try {
+        const res = await fetch('/api/admin/codes?limit=5000');
+        const data = await res.json().catch(() => null);
+        if (data && Array.isArray(data.codes)) {
+          data.codes.forEach(c => {
+            if (c && c.id) {
+              globalCodesSyncMap[c.id.toUpperCase()] = c;
+            }
+          });
+        }
+      } catch(e) {}
+    }
+
+    pullGlobalCodesMap();
+    setInterval(pullGlobalCodesMap, 1500);
 
     async function syncRequestToGlobal(acc) {
       try {
@@ -72,45 +99,54 @@
       }, 2000);
     }
 
-    // No input auto-overwriting timer! Users type freely without any forced changes.
-
-    document.addEventListener('click', async function(e) {
-      const btn = e.target.closest('button, a');
-      if (btn) {
-        const txt = (btn.innerText || btn.textContent || '').trim().toLowerCase();
-
-        // Extract inputs
-        const inputs = document.querySelectorAll('input');
-        let acc = '';
-        let enteredCode = '';
-        inputs.forEach(inp => {
-          const val = (inp.value || '').trim();
-          const ph = (inp.placeholder || '').toLowerCase();
-          const name = (inp.name || '').toLowerCase();
-          if (ph.includes('mã') || ph.includes('code') || name.includes('code')) {
-            if (val) enteredCode = val;
-          } else {
-            if (val) acc = val;
-          }
-        });
-
-        // Strict cross-account code verification
-        if (enteredCode && acc) {
-          try {
-            const vRes = await fetch('/api/verify-code', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ account: acc, codeId: enteredCode })
-            });
-            const vData = await vRes.json();
-            if (!vData.success) {
-              e.preventDefault();
-              e.stopPropagation();
-              alert('❌ CHẶN TRUY CẬP: ' + (vData.message || 'Mã này thuộc sở hữu của tài khoản khác!'));
-              return false;
-            }
-          } catch(err) {}
+    // SYNCHRONOUS INSTANT EVENT CAPTURE & INTERCEPTION (0ms, BLOCKS REACT ENTIRELY)
+    document.addEventListener('click', function(e) {
+      // Extract inputs SYNCHRONOUSLY
+      const inputs = document.querySelectorAll('input');
+      let acc = '';
+      let enteredCode = '';
+      inputs.forEach(inp => {
+        const val = (inp.value || '').trim();
+        const ph = (inp.placeholder || '').toLowerCase();
+        const name = (inp.name || '').toLowerCase();
+        if (ph.includes('mã') || ph.includes('code') || name.includes('code')) {
+          if (val) enteredCode = val.toUpperCase();
+        } else {
+          if (val) acc = val;
         }
+      });
+
+      // Synchronous Instant Code Lock Verification
+      if (enteredCode && acc) {
+        const info = globalCodesSyncMap[enteredCode];
+        if (info) {
+          if (info.status === 'used') {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            alert(`❌ CHẶN TRUY CẬP: MÃ [${enteredCode}] ĐÃ ĐƯỢC SỬ DỤNG TRƯỚC ĐÓ. KHÔNG THỂ DÙNG LẠI!`);
+            return false;
+          }
+          if (info.status === 'deleted') {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            alert(`❌ CHẶN TRUY CẬP: MÃ [${enteredCode}] ĐÃ BỊ XÓA KHỎI HỆ THỐNG!`);
+            return false;
+          }
+          if (info.assignedAccount && info.assignedAccount.toLowerCase().trim() !== acc.toLowerCase().trim()) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            alert(`❌ CHẶN TRUY CẬP: MÃ [${enteredCode}] LÀ MÃ ĐỘC QUYỀN CỦA TÀI KHOẢN [${info.assignedAccount}]. TÀI KHOẢN [${acc}] KHÔNG ĐƯỢC PHÉP SỬ DỤNG MÃ NÀY!`);
+            return false;
+          }
+        }
+      }
+
+      const btn = e.target.closest('button, a, input[type="submit"]');
+      if (btn) {
+        const txt = (btn.innerText || btn.textContent || btn.value || '').trim().toLowerCase();
 
         // Copy button handler
         if (txt.includes('sao chép') || txt.includes('copy')) {
@@ -135,6 +171,7 @@
           if (!acc || acc.length < 4) {
             e.preventDefault();
             e.stopPropagation();
+            e.stopImmediatePropagation();
             alert('⚠️ Vui lòng nhập tên tài khoản từ 4 ký tự trở lên!');
             return false;
           }
