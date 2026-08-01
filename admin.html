@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XOAMAAN - BẢNG QUẢN LÝ CẤP MÃ THEO TÀI KHOẢN</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg-color: #030a09;
+            --panel-bg: rgba(7, 24, 22, 0.85);
+            --panel-border: #135e53;
+            --primary: #25c4ac;
+            --primary-glow: #42edd4;
+            --accent-yellow: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --text-main: #e2f1ee;
+            --text-muted: #648a83;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(37, 196, 172, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 255, 200, 0.03) 0%, transparent 40%);
+        }
+
+        .mono { font-family: 'Share Tech Mono', monospace; }
+
+        /* CRT SCANLINE & GRID BACKGROUND */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* ---------------- LOGIN CONTAINER ---------------- */
+        #login-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(3, 10, 9, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--panel-bg);
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 30px rgba(37, 196, 172, 0.25);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 420px;
+            padding: 35px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .login-card h2 {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(37, 196, 172, 0.5);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: rgba(3, 15, 13, 0.9);
+            border: 1px solid var(--panel-border);
+            color: #fff;
+            padding: 12px 15px;
+            border-radius: 4px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(37, 196, 172, 0.3);
+        }
+
+        .btn-login {
+            width: 100%;
+            background: var(--primary);
+            color: #030a09;
+            border: none;
+            padding: 14px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            background: var(--primary-glow);
+            box-shadow: 0 0 20px var(--primary-glow);
+            transform: translateY(-2px);
+        }
+
+        .login-error {
+            color: var(--accent-red);
+            font-size: 0.9rem;
+            margin-top: 15px;
+            display: none;
+        }
+
+        /* ---------------- MAIN APP LAYOUT ---------------- */
+        .app-container {
+            display: none;
+            max-width: 1300px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 20px;
+            flex: 1;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-title {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--primary);
+            font-size: 1.4rem;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.9rem;
+        }
+
+        .btn-logout {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: var(--accent-red);
+            color: #fff;
+        }
+
+        /* STATS GRID */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .stat-card .val {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            margin-top: 5px;
+        }
+
+        .stat-card .lbl {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-icon {
+            font-size: 2.2rem;
+            opacity: 0.8;
+        }
+
+        /* CONTROLS & FORMS ROW */
+        .tools-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 900px) {
+            .tools-row { grid-template-columns: 1fr; }
+        }
+
+        .card-box {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 22px;
+        }
+
+        .card-title {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px dashed var(--panel-border);
+            padding-bottom: 10px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .form-row .input-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .btn-action {
+            background: var(--primary);
+            color: #030a09;
+            border: none;
+            padding: 12px 20px;
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.3s;
+            height: 43px;
+        }
+
+        .btn-action:hover {
+            background: var(--primary-glow);
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        /* TABLE SECTION */
+        .table-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 22px;
+        }
+
+        .table-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-box input {
+            width: 100%;
+            background: rgba(3, 15, 13, 0.9);
+            border: 1px solid var(--panel-border);
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tab-btn {
+            background: rgba(19, 94, 83, 0.3);
+            border: 1px solid var(--panel-border);
+            color: var(--text-muted);
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: #030a09;
+            border-color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* CODE DATA TABLE */
+        .table-responsive {
+            overflow-x: auto;
+            max-height: 520px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background: rgba(3, 15, 13, 0.95);
+            color: var(--primary);
+            font-family: 'Share Tech Mono', monospace;
+            padding: 14px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid var(--panel-border);
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(19, 94, 83, 0.3);
+        }
+
+        tr:hover td {
+            background: rgba(37, 196, 172, 0.05);
+        }
+
+        .code-tag {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--primary-glow);
+            background: rgba(37, 196, 172, 0.1);
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(37, 196, 172, 0.3);
+            display: inline-block;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
+        .badge-available { background: rgba(37, 196, 172, 0.2); color: var(--primary); border: 1px solid var(--primary); }
+        .badge-assigned { background: rgba(245, 158, 11, 0.2); color: var(--accent-yellow); border: 1px solid var(--accent-yellow); }
+        .badge-used { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .btn-copy { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); border: 1px solid var(--accent-blue); }
+        .btn-copy:hover { background: var(--accent-blue); color: #fff; }
+
+        .btn-mark-used { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red); }
+        .btn-mark-used:hover { background: var(--accent-red); color: #fff; }
+
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 18px;
+            padding-top: 15px;
+            border-top: 1px solid var(--panel-border);
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .export-btns {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* NOTIFICATION TOAST */
+        #toast {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: var(--panel-bg);
+            border: 2px solid var(--primary);
+            color: #fff;
+            padding: 14px 24px;
+            border-radius: 6px;
+            box-shadow: 0 0 20px rgba(37, 196, 172, 0.4);
+            display: none;
+            z-index: 1000;
+            font-family: 'Share Tech Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. LOGIN OVERLAY -->
+    <div id="login-overlay">
+        <div class="login-card">
+            <h2><i class="fa-solid fa-user-shield"></i> XOAMAAN ADMIN LOGIN</h2>
+            <form id="login-form">
+                <div class="input-group">
+                    <label>TÊN ĐĂNG NHẬP (USERNAME)</label>
+                    <input type="text" id="login-user" value="admin" required autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <label>MẬT KHẨU (PASSWORD)</label>
+                    <input type="password" id="login-pass" value="admin123" required autocomplete="off">
+                </div>
+                <button type="submit" class="btn-login"><i class="fa-solid fa-right-to-bracket"></i> ĐĂNG NHẬP BẢNG ĐIỀU HÀNH</button>
+                <div class="login-error" id="login-error">Tên đăng nhập hoặc mật khẩu không chính xác!</div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. MAIN APPLICATION -->
+    <div class="app-container" id="app">
+        <!-- HEADER -->
+        <header>
+            <div class="brand">
+                <i class="fa-solid fa-microchip" style="font-size: 1.8rem; color: var(--primary);"></i>
+                <div>
+                    <div class="brand-title">XOAMAAN // CODE ASSIGNMENT SYSTEM</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">HỆ THỐNG CẤP & QUẢN LÝ MÃ THEO TÀI KHOẢN (SINGLE USE)</div>
+                </div>
+            </div>
+            <div class="user-info">
+                <div><i class="fa-solid fa-circle-user" style="color: var(--primary);"></i> <span id="admin-name">ADMIN</span></div>
+                <button class="btn-logout" id="btn-logout"><i class="fa-solid fa-power-off"></i> ĐĂNG XUẤT</button>
+            </div>
+        </header>
+
+        <!-- STATS GRID -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div>
+                    <div class="lbl">TỔNG SỐ MÃ GIFTCODE</div>
+                    <div class="val" id="stat-total">0</div>
+                </div>
+                <i class="fa-solid fa-box-archive stat-icon" style="color: var(--primary);"></i>
+            </div>
+            <div class="stat-card">
+                <div>
+                    <div class="lbl">MÃ KHẢ DỤNG (CHƯA CẤP)</div>
+                    <div class="val" id="stat-available" style="color: var(--primary);">0</div>
+                </div>
+                <i class="fa-solid fa-key stat-icon" style="color: var(--primary-glow);"></i>
+            </div>
+            <div class="stat-card">
+                <div>
+                    <div class="lbl">MÃ ĐÃ CẤP THEO TK</div>
+                    <div class="val" id="stat-assigned" style="color: var(--accent-yellow);">0</div>
+                </div>
+                <i class="fa-solid fa-id-card-clip stat-icon" style="color: var(--accent-yellow);"></i>
+            </div>
+            <div class="stat-card">
+                <div>
+                    <div class="lbl">MÃ ĐÃ SỬ DỤNG (USED)</div>
+                    <div class="val" id="stat-used" style="color: var(--accent-red);">0</div>
+                </div>
+                <i class="fa-solid fa-circle-check stat-icon" style="color: var(--accent-red);"></i>
+            </div>
+        </div>
+
+        <!-- LIVE PENDING REQUESTS FROM CLIENTS -->
+        <div class="card-box" style="margin-bottom: 25px; border-color: var(--primary);">
+            <div class="card-title" style="color: var(--primary-glow); justify-content: space-between;">
+                <span><i class="fa-solid fa-bell" style="color: var(--accent-yellow);"></i> YÊU CẦU CẤP MÃ MỚI TỪ KHÁCH HÀNG (TRUYỀN TỰ ĐỘNG)</span>
+                <span style="font-size: 0.8rem; background: rgba(37, 196, 172, 0.2); padding: 2px 8px; border-radius: 4px; color: var(--primary);" id="pending-count-badge">0 Yêu cầu</span>
+            </div>
+            <div id="pending-list-container" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; min-height: 45px;">
+                <div style="color: var(--text-muted); font-size: 0.9rem;">Đang chờ yêu cầu từ khách hàng...</div>
+            </div>
+        </div>
+
+        <!-- ACTION TOOLS ROW -->
+        <div class="tools-row">
+            <!-- 1. ASSIGN CODE TO ACCOUNT -->
+            <div class="card-box">
+                <div class="card-title"><i class="fa-solid fa-user-plus"></i> CẤP MÃ THEO TÀI KHOẢN KHÁCH HÀNG</div>
+                <form id="assign-form">
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>TÊN TÀI KHOẢN / ID KHÁCH HÀNG</label>
+                            <input type="text" id="assign-acc" placeholder="Ví dụ: player999..." required>
+                        </div>
+                        <button type="submit" class="btn-action"><i class="fa-solid fa-bolt"></i> CẤP MÃ NGAY</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 2. BULK CODE GENERATOR -->
+            <div class="card-box">
+                <div class="card-title"><i class="fa-solid fa-cubes"></i> TẠO MÃ HÀNG LOẠT (BULK GENERATOR)</div>
+                <form id="gen-form">
+                    <div class="form-row">
+                        <div class="input-group" style="flex: 0.4;">
+                            <label>TIỀN TỐ (PREFIX)</label>
+                            <input type="text" id="gen-prefix" placeholder="Ví dụ: VIP" value="VIP">
+                        </div>
+                        <div class="input-group">
+                            <label>SỐ LƯỢNG MÃ</label>
+                            <input type="number" id="gen-count" min="1" max="2000" value="100" required>
+                        </div>
+                        <button type="submit" class="btn-action"><i class="fa-solid fa-plus-circle"></i> KHỞI TẠO MÃ</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- DATA TABLE CARD -->
+        <div class="table-card">
+            <div class="table-header-bar">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="🔍 Tìm kiếm theo Mã Code hoặc Tên Tài Khoản...">
+                </div>
+                <div class="filter-tabs">
+                    <button class="tab-btn active" data-filter="assigned">🔥 ĐÃ CẤP TÀI KHOẢN (<span id="cnt-assigned">0</span>)</button>
+                    <button class="tab-btn" data-filter="used">✅ ĐÃ SỬ DỤNG (<span id="cnt-used">0</span>)</button>
+                    <button class="tab-btn" data-filter="available">📦 MÃ CHƯA GÁN (<span id="cnt-available">0</span>)</button>
+                    <button class="tab-btn" data-filter="all">TẤT CẢ (<span id="cnt-all">0</span>)</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th>MÃ GIFTCODE</th>
+                            <th>TÀI KHOẢN ĐƯỢC CẤP</th>
+                            <th>TRẠNG THÁI</th>
+                            <th>THỜI GIAN GÁN / DÙNG</th>
+                            <th style="text-align: right;">THAO TÁC</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Dynamic code rows -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination-bar">
+                <div id="page-info">Hiển thị 0 / 0 mã</div>
+                <div class="export-btns">
+                    <button class="btn-sm btn-copy" id="btn-export-csv"><i class="fa-solid fa-file-csv"></i> XUẤT CSV</button>
+                    <button class="btn-sm btn-copy" id="btn-export-json"><i class="fa-solid fa-file-code"></i> XUẤT JSON BACKUP</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast"></div>
+
+    <script>
+        // API vs LOCALSTORAGE HYBRID STATE
+        const API_BASE = window.location.origin;
+        let isApiMode = false;
+        let localCodes = [];
+        let currentFilter = 'assigned';
+        let searchQuery = '';
+
+        // Check if Backend API available
+        async function checkBackend() {
+            try {
+                const res = await fetch(`${API_BASE}/api/admin/stats`);
+                if (res.ok) {
+                    isApiMode = true;
+                    console.log("Connected to REST API Backend Mode");
+                }
+            } catch(e) {
+                isApiMode = false;
+                console.log("Backend offline. Running in Pure LocalStorage Mode.");
+                initLocalStorage();
+            }
+        }
+
+        // Offline LocalStorage fallback
+        function initLocalStorage() {
+            const stored = localStorage.getItem('xoamaan_codes');
+            if (stored) {
+                try { localCodes = JSON.parse(stored); return; } catch(e){}
+            }
+            // Seed 50 default codes
+            localCodes = [];
+            for (let i = 1; i <= 50; i++) {
+                localCodes.push({
+                    id: 'VIP' + Math.random().toString(36).substring(2, 7).toUpperCase(),
+                    assignedAccount: null,
+                    status: 'available',
+                    createdAt: new Date().toISOString(),
+                    assignedAt: null,
+                    usedAt: null
+                });
+            }
+            saveLocalState();
+        }
+
+        function saveLocalState() {
+            localStorage.setItem('xoamaan_codes', JSON.stringify(localCodes));
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        // --- AUTH LOGIC ---
+        const loginOverlay = document.getElementById('login-overlay');
+        const appContainer = document.getElementById('app');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+
+        function checkAuth() {
+            const token = sessionStorage.getItem('adminToken');
+            if (token) {
+                loginOverlay.style.display = 'none';
+                appContainer.style.display = 'block';
+                loadData();
+            } else {
+                loginOverlay.style.display = 'flex';
+                appContainer.style.display = 'none';
+            }
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value.trim();
+
+            if (isApiMode) {
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: u, password: p })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        sessionStorage.setItem('adminToken', data.token);
+                        checkAuth();
+                    } else {
+                        loginError.style.display = 'block';
+                    }
+                } catch(err) {
+                    loginError.style.display = 'block';
+                }
+            } else {
+                if (u === 'admin' && p === 'admin123') {
+                    sessionStorage.setItem('adminToken', 'local-admin-token');
+                    checkAuth();
+                } else {
+                    loginError.style.display = 'block';
+                }
+            }
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            sessionStorage.removeItem('adminToken');
+            checkAuth();
+        });
+
+        // --- LOAD & RENDER DATA ---
+        async function loadData() {
+            let codes = [];
+            if (isApiMode) {
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/codes?limit=5000`);
+                    const data = await res.json();
+                    if (data.success) codes = data.codes;
+                } catch(e) {
+                    codes = localCodes;
+                }
+            } else {
+                codes = localCodes;
+            }
+
+            renderStats(codes);
+            renderTable(codes);
+            loadPendingRequests();
+        }
+
+        async function loadPendingRequests() {
+            let pending = [];
+            if (isApiMode) {
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/pending`);
+                    const data = await res.json();
+                    if (data.success) pending = data.pending;
+                } catch(e) {}
+            } else {
+                pending = JSON.parse(localStorage.getItem('xoamaan_pending') || '[]');
+            }
+
+            const container = document.getElementById('pending-list-container');
+            const badge = document.getElementById('pending-count-badge');
+
+            if (badge) badge.innerText = `${pending.length} Yêu cầu`;
+
+            if (!container) return;
+
+            if (pending.length === 0) {
+                container.innerHTML = `<div style="color: var(--text-muted); font-size: 0.9rem;">Đang chờ yêu cầu từ khách hàng...</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            pending.forEach(item => {
+                const tag = document.createElement('div');
+                tag.style.cssText = `
+                    background: rgba(37, 196, 172, 0.15);
+                    border: 1px solid var(--primary);
+                    padding: 8px 14px;
+                    border-radius: 6px;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    font-size: 0.9rem;
+                `;
+
+                const timeAgo = item.requestedAt ? new Date(item.requestedAt).toLocaleTimeString('vi-VN') : '';
+
+                tag.innerHTML = `
+                    <div><i class="fa-solid fa-user" style="color: var(--primary);"></i> <b style="color: #fff;">${item.account}</b> <span style="font-size: 0.75rem; color: var(--text-muted);">(${timeAgo})</span></div>
+                    <button class="btn-sm btn-action" style="padding: 5px 12px; font-size: 0.8rem; height: auto;" onclick="fillAssignAcc('${item.account}')">
+                        <i class="fa-solid fa-bolt"></i> CẤP MÃ SANG BÊN PHẢI
+                    </button>
+                    <button style="background: none; border: none; color: var(--accent-red); cursor: pointer; padding: 2px 6px;" onclick="dismissPending('${item.account}')">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                container.appendChild(tag);
+            });
+        }
+
+        function fillAssignAcc(acc) {
+            document.getElementById('assign-acc').value = acc;
+            document.getElementById('assign-acc').focus();
+            showToast(`⚡ Đã đưa tài khoản [${acc}] vào ô Cấp Mã bên phải!`);
+        }
+
+        async function dismissPending(acc) {
+            if (isApiMode) {
+                await fetch(`${API_BASE}/api/admin/dismiss-pending`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ account: acc })
+                });
+            } else {
+                let pending = JSON.parse(localStorage.getItem('xoamaan_pending') || '[]');
+                pending = pending.filter(p => p.account.toLowerCase() !== acc.toLowerCase());
+                localStorage.setItem('xoamaan_pending', JSON.stringify(pending));
+            }
+            loadPendingRequests();
+        }
+
+        // Auto poll pending requests every 3 seconds
+        setInterval(loadPendingRequests, 3000);
+
+        function renderStats(codes) {
+            const total = codes.length;
+            const available = codes.filter(c => c.status === 'available').length;
+            const assigned = codes.filter(c => c.status === 'assigned').length;
+            const used = codes.filter(c => c.status === 'used').length;
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-available').innerText = available;
+            document.getElementById('stat-assigned').innerText = assigned;
+            document.getElementById('stat-used').innerText = used;
+
+            document.getElementById('cnt-all').innerText = total;
+            document.getElementById('cnt-available').innerText = available;
+            document.getElementById('cnt-assigned').innerText = assigned;
+            document.getElementById('cnt-used').innerText = used;
+        }
+
+        function renderTable(codes) {
+            let filtered = [...codes];
+
+            // Always sort assigned accounts FIRST at top of table, ordered by newest timestamp DESC
+            filtered.sort((a, b) => {
+                const hasAccA = a.assignedAccount ? 1 : 0;
+                const hasAccB = b.assignedAccount ? 1 : 0;
+                if (hasAccA !== hasAccB) return hasAccB - hasAccA; // Accounts with assigned name FIRST at top!
+                
+                const timeA = new Date(a.usedAt || a.assignedAt || a.createdAt || 0).getTime();
+                const timeB = new Date(b.usedAt || b.assignedAt || b.createdAt || 0).getTime();
+                return timeB - timeA;
+            });
+
+            if (currentFilter !== 'all') {
+                filtered = filtered.filter(c => c.status === currentFilter);
+            }
+
+            if (searchQuery) {
+                const q = searchQuery.toLowerCase();
+                filtered = filtered.filter(c => 
+                    c.id.toLowerCase().includes(q) || 
+                    (c.assignedAccount && c.assignedAccount.toLowerCase().includes(q))
+                );
+            }
+
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">Không có mã nào phù hợp với bộ lọc.</td></tr>`;
+                document.getElementById('page-info').innerText = 'Hiển thị 0 / 0 mã';
+                return;
+            }
+
+            filtered.forEach((item, index) => {
+                const tr = document.createElement('tr');
+
+                let badgeHtml = '';
+                if (item.status === 'available') badgeHtml = `<span class="badge badge-available">KHẢ DỤNG</span>`;
+                else if (item.status === 'assigned') badgeHtml = `<span class="badge badge-assigned">ĐÃ CẤP TK</span>`;
+                else badgeHtml = `<span class="badge badge-used">ĐÃ SỬ DỤNG</span>`;
+
+                const timeStr = item.usedAt ? new Date(item.usedAt).toLocaleString('vi-VN') : 
+                               (item.assignedAt ? new Date(item.assignedAt).toLocaleString('vi-VN') : '-');
+
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><span class="code-tag">${item.id}</span></td>
+                    <td style="font-weight: 600;">${item.assignedAccount ? item.assignedAccount : '<i style="color: var(--text-muted)">Chưa gán</i>'}</td>
+                    <td>${badgeHtml}</td>
+                    <td style="font-size: 0.85rem; color: var(--text-muted);">${timeStr}</td>
+                    <td style="text-align: right;">
+                        <button class="btn-sm btn-copy" onclick="copyCode('${item.id}')"><i class="fa-regular fa-copy"></i> Copy Code</button>
+                        ${item.status !== 'used' ? `<button class="btn-sm btn-mark-used" onclick="markUsed('${item.id}')"><i class="fa-solid fa-check"></i> Đánh dấu dùng</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('page-info').innerText = `Hiển thị ${filtered.length} / ${codes.length} mã`;
+        }
+
+        function copyCode(code) {
+            navigator.clipboard.writeText(code);
+            showToast(`📋 Đã sao chép mã: ${code}`);
+        }
+
+        async function markUsed(codeId) {
+            if (isApiMode) {
+                await fetch(`${API_BASE}/api/use-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codeId })
+                });
+            } else {
+                const item = localCodes.find(c => c.id === codeId);
+                if (item) {
+                    item.status = 'used';
+                    item.usedAt = new Date().toISOString();
+                    saveLocalState();
+                }
+            }
+            showToast(`✅ Đã đánh dấu mã [${codeId}] là ĐÃ SỬ DỤNG`);
+            loadData();
+        }
+
+        // --- ASSIGN CODE FORM ---
+        document.getElementById('assign-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const acc = document.getElementById('assign-acc').value.trim();
+            if (!acc) return;
+
+            if (isApiMode) {
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/assign`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ account: acc })
+                    });
+                    const data = await res.json();
+                    showToast(data.message);
+                } catch(e) {}
+            } else {
+                let existing = localCodes.find(c => c.assignedAccount && c.assignedAccount.toLowerCase() === acc.toLowerCase());
+                if (existing) {
+                    showToast(`Tài khoản ${acc} đã được cấp mã [${existing.id}] trước đó.`);
+                } else {
+                    let available = localCodes.find(c => c.status === 'available');
+                    if (!available) {
+                        showToast(`Hết mã khả dụng! Vui lòng tạo thêm mã mới.`);
+                    } else {
+                        available.assignedAccount = acc;
+                        available.status = 'assigned';
+                        available.assignedAt = new Date().toISOString();
+                        saveLocalState();
+                        showToast(`⚡ Đã cấp mã [${available.id}] cho tài khoản ${acc} thành công!`);
+                    }
+                }
+            }
+            document.getElementById('assign-acc').value = '';
+            loadData();
+        });
+
+        // --- BULK GENERATE FORM ---
+        document.getElementById('gen-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const count = parseInt(document.getElementById('gen-count').value) || 10;
+            const prefix = document.getElementById('gen-prefix').value.trim();
+
+            if (isApiMode) {
+                try {
+                    const res = await fetch(`${API_BASE}/api/admin/generate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ count, prefix })
+                    });
+                    const data = await res.json();
+                    showToast(data.message);
+                } catch(e) {}
+            } else {
+                const existing = new Set(localCodes.map(c => c.id));
+                let added = 0;
+                while (added < count) {
+                    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+                    const code = (prefix ? prefix.toUpperCase() : '') + rand;
+                    if (!existing.has(code)) {
+                        existing.add(code);
+                        localCodes.push({
+                            id: code,
+                            assignedAccount: null,
+                            status: 'available',
+                            createdAt: new Date().toISOString(),
+                            assignedAt: null,
+                            usedAt: null
+                        });
+                        added++;
+                    }
+                }
+                saveLocalState();
+                showToast(`➕ Đã khởi tạo ${added} mã mới thành công!`);
+            }
+            loadData();
+        });
+
+        // --- SEARCH & TABS ---
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            loadData();
+        });
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.getAttribute('data-filter');
+                loadData();
+            });
+        });
+
+        // EXPORT CSV / JSON
+        document.getElementById('btn-export-csv').addEventListener('click', async () => {
+            let list = isApiMode ? (await (await fetch(`${API_BASE}/api/admin/codes?limit=5000`)).json()).codes : localCodes;
+            let csv = "STT,Ma Code,Tai Khoan,Trang Thai,Thoi Gian\n";
+            list.forEach((c, idx) => {
+                csv += `${idx + 1},${c.id},"${c.assignedAccount || ''}",${c.status},"${c.usedAt || c.assignedAt || c.createdAt}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `danh_sach_ma_xoamaan_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+        });
+
+        document.getElementById('btn-export-json').addEventListener('click', async () => {
+            let list = isApiMode ? (await (await fetch(`${API_BASE}/api/admin/codes?limit=5000`)).json()).codes : localCodes;
+            const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `backup_codes_xoamaan_${new Date().toISOString().slice(0,10)}.json`;
+            link.click();
+        });
+
+        // INITIALIZE
+        checkBackend().then(() => checkAuth());
+    </script>
+</body>
+</html>

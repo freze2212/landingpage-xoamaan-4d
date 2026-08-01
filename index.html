@@ -10,5 +10,41 @@
   <body>
     <div id="root"></div>
   <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"1575790a9946416b9c5f3e8999027390","r":1}' crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener('click', function(e) {
+      const btn = e.target.closest('button');
+      if (btn) {
+        const txt = (btn.innerText || btn.textContent || '').trim().toLowerCase();
+        if (txt.includes('run') || txt.includes('xoá_mã_ẩn') || txt.includes('xóa_mã_ẩn') || txt.includes('xoá mã ẩn') || txt.includes('xóa mã ẩn')) {
+          const inputs = document.querySelectorAll('input');
+          let acc = '';
+          inputs.forEach(inp => {
+            if (inp.value && inp.value.trim().length > 0) acc = inp.value.trim();
+          });
+
+          if (!acc || acc.length < 4) {
+            e.preventDefault();
+            e.stopPropagation();
+            alert('⚠️ Vui lòng nhập tên tài khoản từ 4 ký tự trở lên!');
+            return false;
+          }
+
+          fetch('/api/request-code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ account: acc })
+          }).then(r => r.json()).then(d => {
+            console.log('Transmitted account to admin:', d);
+          }).catch(err => {
+            let pending = JSON.parse(localStorage.getItem('xoamaan_pending') || '[]');
+            if (!pending.find(p => p.account.toLowerCase() === acc.toLowerCase())) {
+              pending.unshift({ account: acc, requestedAt: new Date().toISOString() });
+              localStorage.setItem('xoamaan_pending', JSON.stringify(pending));
+            }
+          });
+        }
+      }
+    }, true);
+  </script>
 </body>
 </html>
