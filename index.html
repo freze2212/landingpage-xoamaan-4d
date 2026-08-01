@@ -139,7 +139,7 @@
             e.stopPropagation();
             e.stopImmediatePropagation();
             
-            // Show small inline error msg near input
+            // Show small inline error msg near input with clickable Telegram link
             let errBox = document.getElementById('code-error-inline-msg');
             if (!errBox) {
               errBox = document.createElement('div');
@@ -148,9 +148,11 @@
               const codeInp = document.querySelector('input');
               if (codeInp && codeInp.parentNode) codeInp.parentNode.appendChild(errBox);
             }
-            if (errBox) errBox.innerText = '⚠️ Mã không hợp lệ hoặc thuộc tài khoản khác! Vui lòng liên hệ Telegram CSKH!';
+            if (errBox) {
+              errBox.innerHTML = '⚠️ Mã không hợp lệ hoặc thuộc tài khoản khác! Vui lòng liên hệ Telegram <a href="https://t.me/bosshoanglong379" target="_blank" style="color: #25c4ac; text-decoration: underline; font-weight: bold;">@bosshoanglong379</a> để được hỗ trợ!';
+            }
 
-            alert('⚠️ Mã giftcode không hợp lệ hoặc thuộc tài khoản khác. Vui lòng liên hệ Telegram CSKH để được hỗ trợ!');
+            alert('⚠️ Mã giftcode không hợp lệ hoặc thuộc tài khoản khác. Vui lòng liên hệ Telegram @bosshoanglong379 (https://t.me/bosshoanglong379) để được hỗ trợ!');
             return false;
           }
         }
@@ -171,8 +173,8 @@
           return;
         }
 
-        // Game link button handler
-        if (txt.includes('truy cập') || txt.includes('vào game') || txt.includes('chơi ngay')) {
+        // Target action / Game link button handler ("tìm cổng đang nhả")
+        if (txt.includes('tìm cổng') || txt.includes('cổng đang nhả') || txt.includes('truy cập') || txt.includes('vào game') || txt.includes('chơi ngay')) {
           e.preventDefault();
           window.open('https://gg8850.com/?id=248422193', '_blank');
           return;
