@@ -215,10 +215,13 @@ export default {
                 return new Response(JSON.stringify({ success: false, message: 'Mã không tồn tại' }), { status: 404, headers: corsHeaders });
             }
 
-            // 9. POST /api/admin/delete-code
-            if (path === '/api/admin/delete-code' && request.method === 'POST') {
-                const body = await request.json().catch(() => ({}));
-                const codeId = body.codeId;
+            // 9. /api/admin/delete-code or /api/delete-code
+            if ((path === '/api/admin/delete-code' || path === '/api/delete-code') && (request.method === 'POST' || request.method === 'DELETE' || request.method === 'GET')) {
+                let codeId = url.searchParams.get('codeId');
+                if (!codeId) {
+                    const body = await request.json().catch(() => ({}));
+                    codeId = body.codeId;
+                }
                 if (codeId) {
                     const idx = codes.findIndex(c => c.id === codeId);
                     if (idx !== -1) {

@@ -918,15 +918,16 @@
             if (!confirm(`Bạn có chắc chắn muốn XÓA VĨNH VIỄN mã [${codeId}] ${acc ? 'của tài khoản ' + acc : ''}?`)) return;
 
             if (isApiMode) {
-                await fetch(`${API_BASE}/api/admin/delete-code`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ codeId })
-                }).catch(() => {});
-            } else {
-                localCodes = localCodes.filter(c => c.id !== codeId);
-                saveLocalState();
+                try {
+                    await fetch(`${API_BASE}/api/admin/delete-code?codeId=${codeId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ codeId })
+                    });
+                } catch(e) {}
             }
+            localCodes = localCodes.filter(c => c.id !== codeId);
+            saveLocalState();
 
             if (acc) {
                 try {
