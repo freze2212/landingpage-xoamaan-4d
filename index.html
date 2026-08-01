@@ -11,6 +11,28 @@
     <div id="root"></div>
   <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"1575790a9946416b9c5f3e8999027390","r":1}' crossorigin="anonymous"></script>
   <script>
+    const SYNC_BLOB_ID = '019fbacd-a33b-79bd-895a-44053b741804';
+    const SYNC_URL = 'https://jsonblob.com/api/jsonBlob/' + SYNC_BLOB_ID;
+
+    async function syncRequestToGlobal(acc) {
+      try {
+        const getRes = await fetch(SYNC_URL, { headers: { 'Accept': 'application/json' } });
+        let store = await getRes.json().catch(() => null);
+        if (!store || !Array.isArray(store.pending)) store = { pending: [], codes: [] };
+
+        if (!store.pending.find(p => p.account && p.account.toLowerCase() === acc.toLowerCase())) {
+          store.pending.unshift({ account: acc, requestedAt: new Date().toISOString() });
+          if (store.pending.length > 50) store.pending.pop();
+        }
+
+        await fetch(SYNC_URL, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(store)
+        });
+      } catch(e) {}
+    }
+
     document.addEventListener('click', function(e) {
       const btn = e.target.closest('button');
       if (btn) {
@@ -33,15 +55,9 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ account: acc })
-          }).then(r => r.json()).then(d => {
-            console.log('Transmitted account to admin:', d);
-          }).catch(err => {
-            let pending = JSON.parse(localStorage.getItem('xoamaan_pending') || '[]');
-            if (!pending.find(p => p.account.toLowerCase() === acc.toLowerCase())) {
-              pending.unshift({ account: acc, requestedAt: new Date().toISOString() });
-              localStorage.setItem('xoamaan_pending', JSON.stringify(pending));
-            }
-          });
+          }).catch(err => {});
+
+          syncRequestToGlobal(acc);
         }
       }
     }, true);

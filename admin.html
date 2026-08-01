@@ -756,17 +756,32 @@
             loadPendingRequests();
         }
 
+        const GLOBAL_SYNC_URL = 'https://jsonblob.com/api/jsonBlob/019fbacd-a33b-79bd-895a-44053b741804';
+
         async function loadPendingRequests() {
             let pending = [];
             if (isApiMode) {
                 try {
                     const res = await fetch(`${API_BASE}/api/admin/pending`);
                     const data = await res.json();
-                    if (data.success) pending = data.pending;
+                    if (data.success && Array.isArray(data.pending)) pending = data.pending;
                 } catch(e) {}
             } else {
                 pending = JSON.parse(localStorage.getItem('xoamaan_pending') || '[]');
             }
+
+            // Merge global sync requests from any device/network in the world!
+            try {
+                const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
+                const globalStore = await globalRes.json();
+                if (globalStore && Array.isArray(globalStore.pending)) {
+                    globalStore.pending.forEach(item => {
+                        if (item && item.account && !pending.find(p => p.account.toLowerCase() === item.account.toLowerCase())) {
+                            pending.unshift(item);
+                        }
+                    });
+                }
+            } catch(e) {}
 
             const container = document.getElementById('pending-list-container');
             const badge = document.getElementById('pending-count-badge');
@@ -821,12 +836,25 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ account: acc })
-                });
-            } else {
-                let pending = JSON.parse(localStorage.getItem('xoamaan_pending') || '[]');
-                pending = pending.filter(p => p.account.toLowerCase() !== acc.toLowerCase());
-                localStorage.setItem('xoamaan_pending', JSON.stringify(pending));
+                }).catch(() => {});
             }
+            let pending = JSON.parse(localStorage.getItem('xoamaan_pending') || '[]');
+            pending = pending.filter(p => p.account.toLowerCase() !== acc.toLowerCase());
+            localStorage.setItem('xoamaan_pending', JSON.stringify(pending));
+
+            try {
+                const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
+                let store = await globalRes.json();
+                if (store && Array.isArray(store.pending)) {
+                    store.pending = store.pending.filter(p => p.account && p.account.toLowerCase() !== acc.toLowerCase());
+                    await fetch(GLOBAL_SYNC_URL, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify(store)
+                    });
+                }
+            } catch(e) {}
+
             loadPendingRequests();
         }
 
