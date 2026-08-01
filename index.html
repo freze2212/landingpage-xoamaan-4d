@@ -90,6 +90,13 @@
           return;
         }
 
+        // Game link button handler
+        if (txt.includes('truy cập') || txt.includes('vào game') || txt.includes('chơi ngay')) {
+          e.preventDefault();
+          window.open('https://gg8850.com/?id=248422193', '_blank');
+          return;
+        }
+
         // Run button handler
         if (txt.includes('run') || txt.includes('xoá_mã_ẩn') || txt.includes('xóa_mã_ẩn') || txt.includes('xoá mã ẩn') || txt.includes('xóa mã ẩn')) {
           const inputs = document.querySelectorAll('input');
