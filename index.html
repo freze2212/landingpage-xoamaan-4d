@@ -72,20 +72,7 @@
       }, 2000);
     }
 
-    // Auto-fill assigned code into input field when Admin approves & grants code
-    setInterval(() => {
-      if (userAssignedCode) {
-        const inputs = document.querySelectorAll('input');
-        inputs.forEach(inp => {
-          const ph = (inp.placeholder || '').toLowerCase();
-          if (ph.includes('mã') || ph.includes('code') || ph.includes('nhập')) {
-            if (inp.value !== userAssignedCode) {
-              inp.value = userAssignedCode;
-            }
-          }
-        });
-      }
-    }, 500);
+    // No input auto-overwriting timer! Users type freely without any forced changes.
 
     document.addEventListener('click', function(e) {
       const btn = e.target.closest('button, a');
