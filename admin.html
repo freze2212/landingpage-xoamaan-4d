@@ -535,17 +535,6 @@
             </div>
         </div>
 
-        <!-- LIVE PENDING REQUESTS FROM CLIENTS -->
-        <div class="card-box" style="margin-bottom: 25px; border-color: var(--primary);">
-            <div class="card-title" style="color: var(--primary-glow); justify-content: space-between;">
-                <span><i class="fa-solid fa-bell" style="color: var(--accent-yellow);"></i> YÊU CẦU CẤP MÃ MỚI TỪ KHÁCH HÀNG (TRUYỀN TỰ ĐỘNG)</span>
-                <span style="font-size: 0.8rem; background: rgba(37, 196, 172, 0.2); padding: 2px 8px; border-radius: 4px; color: var(--primary);" id="pending-count-badge">0 Yêu cầu</span>
-            </div>
-            <div id="pending-list-container" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; min-height: 45px;">
-                <div style="color: var(--text-muted); font-size: 0.9rem;">Đang chờ yêu cầu từ khách hàng...</div>
-            </div>
-        </div>
-
         <!-- ACTION TOOLS ROW -->
         <div class="tools-row">
             <!-- 1. ASSIGN CODE TO ACCOUNT -->
@@ -736,6 +725,40 @@
             checkAuth();
         });
 
+        const GLOBAL_SYNC_URL = 'https://jsonblob.com/api/jsonBlob/019fbacd-a33b-79bd-895a-44053b741804';
+
+        async function autoProcessGlobalSync(codes) {
+            try {
+                const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
+                const globalStore = await globalRes.json().catch(() => null);
+                if (globalStore && Array.isArray(globalStore.pending)) {
+                    for (const item of globalStore.pending) {
+                        if (item && item.account) {
+                            const acc = item.account.trim();
+                            const exists = codes.find(c => c.assignedAccount && c.assignedAccount.toLowerCase() === acc.toLowerCase());
+                            if (!exists) {
+                                if (isApiMode) {
+                                    await fetch(`${API_BASE}/api/admin/assign`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ account: acc })
+                                    }).catch(() => {});
+                                } else {
+                                    let avail = localCodes.find(c => c.status === 'available');
+                                    if (avail) {
+                                        avail.assignedAccount = acc;
+                                        avail.status = 'assigned';
+                                        avail.assignedAt = new Date().toISOString();
+                                        saveLocalState();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch(e) {}
+        }
+
         // --- LOAD & RENDER DATA ---
         async function loadData() {
             let codes = [];
@@ -751,115 +774,23 @@
                 codes = localCodes;
             }
 
+            await autoProcessGlobalSync(codes);
+
+            // Sort codes: assigned accounts on top, newest assigned first
+            codes.sort((a, b) => {
+                const hasAccA = a.assignedAccount ? 1 : 0;
+                const hasAccB = b.assignedAccount ? 1 : 0;
+                if (hasAccA !== hasAccB) return hasAccB - hasAccA;
+                const timeA = new Date(a.usedAt || a.assignedAt || a.createdAt || 0).getTime();
+                const timeB = new Date(b.usedAt || b.assignedAt || b.createdAt || 0).getTime();
+                return timeB - timeA;
+            });
+
             renderStats(codes);
             renderTable(codes);
-            loadPendingRequests();
         }
 
-        const GLOBAL_SYNC_URL = 'https://jsonblob.com/api/jsonBlob/019fbacd-a33b-79bd-895a-44053b741804';
-
-        async function loadPendingRequests() {
-            let pending = [];
-            if (isApiMode) {
-                try {
-                    const res = await fetch(`${API_BASE}/api/admin/pending`);
-                    const data = await res.json();
-                    if (data.success && Array.isArray(data.pending)) pending = data.pending;
-                } catch(e) {}
-            } else {
-                pending = JSON.parse(localStorage.getItem('xoamaan_pending') || '[]');
-            }
-
-            // Merge global sync requests from any device/network in the world!
-            try {
-                const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
-                const globalStore = await globalRes.json();
-                if (globalStore && Array.isArray(globalStore.pending)) {
-                    globalStore.pending.forEach(item => {
-                        if (item && item.account && !pending.find(p => p.account.toLowerCase() === item.account.toLowerCase())) {
-                            pending.unshift(item);
-                        }
-                    });
-                }
-            } catch(e) {}
-
-            const container = document.getElementById('pending-list-container');
-            const badge = document.getElementById('pending-count-badge');
-
-            if (badge) badge.innerText = `${pending.length} Yêu cầu`;
-
-            if (!container) return;
-
-            if (pending.length === 0) {
-                container.innerHTML = `<div style="color: var(--text-muted); font-size: 0.9rem;">Đang chờ yêu cầu từ khách hàng...</div>`;
-                return;
-            }
-
-            container.innerHTML = '';
-            pending.forEach(item => {
-                const tag = document.createElement('div');
-                tag.style.cssText = `
-                    background: rgba(37, 196, 172, 0.15);
-                    border: 1px solid var(--primary);
-                    padding: 8px 14px;
-                    border-radius: 6px;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    font-size: 0.9rem;
-                `;
-
-                const timeAgo = item.requestedAt ? new Date(item.requestedAt).toLocaleTimeString('vi-VN') : '';
-
-                tag.innerHTML = `
-                    <div><i class="fa-solid fa-user" style="color: var(--primary);"></i> <b style="color: #fff;">${item.account}</b> <span style="font-size: 0.75rem; color: var(--text-muted);">(${timeAgo})</span></div>
-                    <button class="btn-sm btn-action" style="padding: 5px 12px; font-size: 0.8rem; height: auto;" onclick="fillAssignAcc('${item.account}')">
-                        <i class="fa-solid fa-bolt"></i> CẤP MÃ SANG BÊN PHẢI
-                    </button>
-                    <button style="background: none; border: none; color: var(--accent-red); cursor: pointer; padding: 2px 6px;" onclick="dismissPending('${item.account}')">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                `;
-                container.appendChild(tag);
-            });
-        }
-
-        function fillAssignAcc(acc) {
-            document.getElementById('assign-acc').value = acc;
-            document.getElementById('assign-acc').focus();
-            showToast(`⚡ Đã đưa tài khoản [${acc}] vào ô Cấp Mã bên phải!`);
-        }
-
-        async function dismissPending(acc) {
-            if (isApiMode) {
-                await fetch(`${API_BASE}/api/admin/dismiss-pending`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ account: acc })
-                }).catch(() => {});
-            }
-            let pending = JSON.parse(localStorage.getItem('xoamaan_pending') || '[]');
-            pending = pending.filter(p => p.account.toLowerCase() !== acc.toLowerCase());
-            localStorage.setItem('xoamaan_pending', JSON.stringify(pending));
-
-            try {
-                const globalRes = await fetch(GLOBAL_SYNC_URL, { headers: { 'Accept': 'application/json' } });
-                let store = await globalRes.json();
-                if (store && Array.isArray(store.pending)) {
-                    store.pending = store.pending.filter(p => p.account && p.account.toLowerCase() !== acc.toLowerCase());
-                    await fetch(GLOBAL_SYNC_URL, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify(store)
-                    });
-                }
-            } catch(e) {}
-
-            loadPendingRequests();
-        }
-
-        // Auto poll pending requests every 3 seconds
-        setInterval(loadPendingRequests, 3000);
+        setInterval(loadData, 2000);
 
         function renderStats(codes) {
             const total = codes.length;
@@ -979,7 +910,11 @@
                         body: JSON.stringify({ account: acc })
                     });
                     const data = await res.json();
-                    showToast(data.message);
+                    if (data.success && data.code) {
+                        showToast(`⚡ Đã cấp mã [${data.code.id}] cho tài khoản ${acc} thành công!`);
+                    } else {
+                        showToast(data.message || 'Cấp mã thành công!');
+                    }
                 } catch(e) {}
             } else {
                 let existing = localCodes.find(c => c.assignedAccount && c.assignedAccount.toLowerCase() === acc.toLowerCase());
@@ -998,7 +933,13 @@
                     }
                 }
             }
+
             document.getElementById('assign-acc').value = '';
+            currentFilter = 'assigned';
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            const tabAssigned = document.querySelector('.tab-item[data-status="assigned"]');
+            if (tabAssigned) tabAssigned.classList.add('active');
+
             loadData();
         });
 
