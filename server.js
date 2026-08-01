@@ -177,7 +177,7 @@ app.post('/api/admin/assign', (req, res) => {
     if (codeId) {
         targetCode = codesDB.find(c => c.id === codeId);
     } else {
-        targetCode = codesDB.find(c => c.status === 'available');
+        targetCode = codesDB.find(c => c.status === 'available' && !c.assignedAccount);
     }
     
     if (!targetCode) {
@@ -217,7 +217,7 @@ app.post('/api/request-code', (req, res) => {
     }
     
     // Assign available code automatically or reserve
-    let available = codesDB.find(c => c.status === 'available');
+    let available = codesDB.find(c => c.status === 'available' && !c.assignedAccount);
     if (!available) {
         return res.status(400).json({ success: false, message: 'Hệ thống hết mã khả dụng. Vui lòng liên hệ Admin.' });
     }

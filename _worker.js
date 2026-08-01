@@ -152,7 +152,7 @@ export default {
                 }
 
                 // Assign available
-                let avail = codes.find(c => c.status === 'available');
+                let avail = codes.find(c => c.status === 'available' && !c.assignedAccount);
                 if (!avail) {
                     return new Response(JSON.stringify({ success: false, message: 'Hết mã khả dụng' }), { status: 400, headers: corsHeaders });
                 }
@@ -191,7 +191,7 @@ export default {
                     return new Response(JSON.stringify({ success: true, alreadyAssigned: true, code: existing }), { headers: corsHeaders });
                 }
 
-                let avail = codes.find(c => c.status === 'available');
+                let avail = codes.find(c => c.status === 'available' && !c.assignedAccount);
                 if (!avail) return new Response(JSON.stringify({ success: false, message: 'Hết mã' }), { status: 400, headers: corsHeaders });
 
                 avail.assignedAccount = acc;
