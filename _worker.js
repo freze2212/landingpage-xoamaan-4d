@@ -213,10 +213,10 @@ export default {
             }
 
             // 8.5. POST /api/verify-code (Verify code ownership & status)
-            if (path === '/api/verify-code' && request.method === 'POST') {
-                const body = await request.json().catch(() => ({}));
-                const acc = (body.account || '').trim().toLowerCase();
-                const codeId = (body.codeId || '').trim().toUpperCase();
+            if ((path === '/api/verify-code' || path.startsWith('/api/verify-code')) && (request.method === 'POST' || request.method === 'GET')) {
+                let body = await request.json().catch(() => ({}));
+                let acc = (body.account || url.searchParams.get('account') || '').trim().toLowerCase();
+                let codeId = (body.codeId || url.searchParams.get('codeId') || '').trim().toUpperCase();
 
                 const target = codes.find(c => c.id.toUpperCase() === codeId);
                 if (!target) {
