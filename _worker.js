@@ -74,6 +74,11 @@ export default {
                     targetUrl: "https://gg8850.com/?id=525443428",
                     telegramUrl: "https://t.me/thaymeo68",
                     telegramUsername: "@thaymeo68"
+                },
+                "xoamaan.asia": {
+                    targetUrl: "https://gg8850.com/?id=248422193",
+                    telegramUrl: "https://t.me/bosshoanglong379",
+                    telegramUsername: "@bosshoanglong379"
                 }
             }
         };
