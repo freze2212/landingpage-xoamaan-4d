@@ -206,6 +206,21 @@
           return;
         }
 
+        // IT Support / Telegram button handler ("IT HỖ TRỢ XÓA MÃ", "hỗ trợ", "telegram", "tele")
+        if (txt.includes('it hỗ trợ') || txt.includes('hỗ trợ') || txt.includes('telegram') || txt.includes('tele') || txt.includes('support')) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          
+          const teleUrl = window.getTelegramUrl();
+          if (btn.tagName === 'A') {
+            btn.href = teleUrl;
+            btn.target = '_blank';
+          }
+          window.open(teleUrl, '_blank');
+          return false;
+        }
+
         // Target action / Game link button handler ("tìm cổng đang nhả")
         if (txt.includes('tìm cổng') || txt.includes('cổng đang nhả') || txt.includes('truy cập') || txt.includes('vào game') || txt.includes('chơi ngay')) {
           e.preventDefault();
