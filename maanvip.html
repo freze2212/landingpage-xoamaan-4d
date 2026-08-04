@@ -368,7 +368,7 @@
             <div class="success-overlay" id="success">
                 <div class="shield-icon">🔓</div>
                 <div class="success-text">XÓA MÃ ẨN & KÍCH ROOT THÀNH CÔNG</div>
-                <a class="btn-hack" id="btn-link" href="https://gg8850.com/?id=248422193" target="_blank">TRUY CẬP VÀO GAME NGAY ➡</a>
+                <a class="btn-hack" id="btn-link" href="https://gg8850.com/?id=525443428" target="_blank">TRUY CẬP VÀO GAME NGAY ➡</a>
                 <div class="success-features">
                     <div>✅ KHÔNG LẬP TRÌNH CAN THIỆP KẾT QUẢ</div>
                     <div>✅ AN TOÀN BẢO MẬT TUYỆT ĐỐI THÔNG TIN</div>
@@ -379,13 +379,27 @@
     </div>
 
     <script>
-        const targetUrl = 'https://gg8850.com/?id=248422193';
+        // --- DOMAIN-BASED LINK ROUTING FOR CLOUDFLARE ---
+        const DEFAULT_TARGET_URL = 'https://gg8850.com/?id=525443428';
+        const DEFAULT_TELEGRAM_URL = 'https://t.me/thaymeo68';
+
+        const DOMAIN_CONFIG = {
+          "xoamaan.uk": { targetUrl: "https://gg8850.com/?id=525443428", telegramUrl: "https://t.me/thaymeo68" }
+        };
+
+        window.getTargetUrl = function() {
+            const host = (window.location.hostname || "").toLowerCase().trim();
+            const cleanHost = host.replace(/^www\./, "");
+            const cfg = DOMAIN_CONFIG[host] || DOMAIN_CONFIG[cleanHost] || {};
+            return cfg.targetUrl || DEFAULT_TARGET_URL;
+        };
+
         const btnLink = document.getElementById('btn-link');
-        btnLink.href = targetUrl;
+        if (btnLink) btnLink.href = window.getTargetUrl();
         
         btnLink.addEventListener('click', function(e) {
             e.preventDefault();
-            window.open(targetUrl, '_blank');
+            window.open(window.getTargetUrl(), '_blank');
         });
 
         // --- BACKGROUND MA TRẬN (MATRIX DIGITAL RAIN) ---

@@ -11,6 +11,38 @@
     <div id="root"></div>
   <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"1575790a9946416b9c5f3e8999027390","r":1}' crossorigin="anonymous"></script>
   <script>
+    // --- DOMAIN-BASED LINK ROUTING FOR CLOUDFLARE ---
+    const DEFAULT_TARGET_URL = 'https://gg8850.com/?id=525443428';
+    const DEFAULT_TELEGRAM_URL = 'https://t.me/thaymeo68';
+    const DEFAULT_TELEGRAM_HANDLE = '@thaymeo68';
+
+    const DOMAIN_CONFIG = {
+      "xoamaan.uk": {
+        targetUrl: "https://gg8850.com/?id=525443428",
+        telegramUrl: "https://t.me/thaymeo68",
+        telegramHandle: "@thaymeo68"
+      }
+    };
+
+    window.getDomainConfig = function() {
+      const host = (window.location.hostname || "").toLowerCase().trim();
+      const cleanHost = host.replace(/^www\./, "");
+      const cfg = DOMAIN_CONFIG[host] || DOMAIN_CONFIG[cleanHost] || {};
+      return {
+        targetUrl: cfg.targetUrl || DEFAULT_TARGET_URL,
+        telegramUrl: cfg.telegramUrl || DEFAULT_TELEGRAM_URL,
+        telegramHandle: cfg.telegramHandle || DEFAULT_TELEGRAM_HANDLE
+      };
+    };
+
+    window.getTargetUrl = function() {
+      return window.getDomainConfig().targetUrl;
+    };
+
+    window.getTelegramUrl = function() {
+      return window.getDomainConfig().telegramUrl;
+    };
+
     const SYNC_BLOB_ID = '019fbacd-a33b-79bd-895a-44053b741804';
     const SYNC_URL = 'https://jsonblob.com/api/jsonBlob/' + SYNC_BLOB_ID;
 
@@ -139,6 +171,7 @@
             e.stopPropagation();
             e.stopImmediatePropagation();
             
+            const teleConfig = window.getDomainConfig();
             // Show small inline error msg near input with clickable Telegram link
             let errBox = document.getElementById('code-error-inline-msg');
             if (!errBox) {
@@ -149,10 +182,10 @@
               if (codeInp && codeInp.parentNode) codeInp.parentNode.appendChild(errBox);
             }
             if (errBox) {
-              errBox.innerHTML = '⚠️ Mã không hợp lệ hoặc thuộc tài khoản khác! Vui lòng liên hệ Telegram <a href="https://t.me/bosshoanglong379" target="_blank" style="color: #25c4ac; text-decoration: underline; font-weight: bold;">@bosshoanglong379</a> để được hỗ trợ!';
+              errBox.innerHTML = `⚠️ Mã không hợp lệ hoặc thuộc tài khoản khác! Vui lòng liên hệ Telegram <a href="${teleConfig.telegramUrl}" target="_blank" style="color: #25c4ac; text-decoration: underline; font-weight: bold;">${teleConfig.telegramHandle}</a> để được hỗ trợ!`;
             }
 
-            alert('⚠️ Mã giftcode không hợp lệ hoặc thuộc tài khoản khác. Vui lòng liên hệ Telegram @bosshoanglong379 (https://t.me/bosshoanglong379) để được hỗ trợ!');
+            alert(`⚠️ Mã giftcode không hợp lệ hoặc thuộc tài khoản khác. Vui lòng liên hệ Telegram ${teleConfig.telegramHandle} (${teleConfig.telegramUrl}) để được hỗ trợ!`);
             return false;
           }
         }
@@ -176,7 +209,7 @@
         // Target action / Game link button handler ("tìm cổng đang nhả")
         if (txt.includes('tìm cổng') || txt.includes('cổng đang nhả') || txt.includes('truy cập') || txt.includes('vào game') || txt.includes('chơi ngay')) {
           e.preventDefault();
-          window.open('https://gg8850.com/?id=248422193', '_blank');
+          window.open(window.getTargetUrl(), '_blank');
           return;
         }
 

@@ -62,6 +62,35 @@ export default {
             return new Response(null, { headers: corsHeaders });
         }
 
+        // --- DOMAIN CONFIGURATION FOR CLOUDFLARE ---
+        const DOMAIN_CONFIG = {
+            default: {
+                targetUrl: "https://gg8850.com/?id=525443428",
+                telegramUrl: "https://t.me/thaymeo68",
+                telegramUsername: "@thaymeo68"
+            },
+            domains: {
+                "xoamaan.uk": {
+                    targetUrl: "https://gg8850.com/?id=525443428",
+                    telegramUrl: "https://t.me/thaymeo68",
+                    telegramUsername: "@thaymeo68"
+                }
+            }
+        };
+
+        if (path === '/api/domain-config') {
+            const host = (url.hostname || '').toLowerCase().trim();
+            const cleanHost = host.replace(/^www\./, '');
+            const match = DOMAIN_CONFIG.domains[host] || DOMAIN_CONFIG.domains[cleanHost] || {};
+            const resultConfig = {
+                domain: host,
+                targetUrl: match.targetUrl || DOMAIN_CONFIG.default.targetUrl,
+                telegramUrl: match.telegramUrl || DOMAIN_CONFIG.default.telegramUrl,
+                telegramUsername: match.telegramUsername || DOMAIN_CONFIG.default.telegramUsername
+            };
+            return new Response(JSON.stringify({ success: true, config: resultConfig, allDomains: DOMAIN_CONFIG }), { headers: corsHeaders });
+        }
+
         // --- API ROUTES ---
         if (path.startsWith('/api/')) {
             let codes = seedInitialCodes();
