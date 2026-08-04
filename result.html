@@ -395,12 +395,12 @@
         };
 
         const btnLink = document.getElementById('btn-link');
-        if (btnLink) btnLink.href = window.getTargetUrl();
-        
-        btnLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            window.open(window.getTargetUrl(), '_blank');
-        });
+        if (btnLink) {
+            btnLink.href = window.getTargetUrl();
+            btnLink.addEventListener('click', function(e) {
+                this.href = window.getTargetUrl();
+            });
+        }
 
         // --- BACKGROUND MA TRẬN (MATRIX DIGITAL RAIN) ---
         const canvas = document.getElementById('matrix');

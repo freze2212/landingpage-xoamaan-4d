@@ -209,8 +209,16 @@
         // Target action / Game link button handler ("tìm cổng đang nhả")
         if (txt.includes('tìm cổng') || txt.includes('cổng đang nhả') || txt.includes('truy cập') || txt.includes('vào game') || txt.includes('chơi ngay')) {
           e.preventDefault();
-          window.open(window.getTargetUrl(), '_blank');
-          return;
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          
+          const targetUrl = window.getTargetUrl();
+          if (btn.tagName === 'A') {
+            btn.href = targetUrl;
+            btn.target = '_blank';
+          }
+          window.open(targetUrl, '_blank');
+          return false;
         }
 
         // Run button handler
