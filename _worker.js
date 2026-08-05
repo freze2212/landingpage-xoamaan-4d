@@ -84,6 +84,11 @@ export default {
                     targetUrl: "https://gg8832.com/?id=669002001",
                     telegramUrl: "https://t.me/toolslotAI2026",
                     telegramUsername: "@toolslotAI2026"
+                },
+                "xoamaan88.net": {
+                    targetUrl: "https://www.gg8850.com/?id=756363415",
+                    telegramUrl: "https://t.me/minhanh9x1",
+                    telegramUsername: "@minhanh9x1"
                 }
             }
         };
