@@ -94,6 +94,11 @@ export default {
                     targetUrl: "https://gg8826.com/?id=402479299",
                     telegramUrl: "https://t.me/phongtranst",
                     telegramUsername: "@phongtranst"
+                },
+                "xoamaan1.vip": {
+                    targetUrl: "https://gg8854.com/?id=477237917",
+                    telegramUrl: "https://t.me/YNHIKUTE19",
+                    telegramUsername: "@YNHIKUTE19"
                 }
             }
         };

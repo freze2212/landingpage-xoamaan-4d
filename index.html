@@ -41,6 +41,11 @@
         targetUrl: "https://gg8826.com/?id=402479299",
         telegramUrl: "https://t.me/phongtranst",
         telegramHandle: "@phongtranst"
+      },
+      "xoamaan1.vip": {
+        targetUrl: "https://gg8854.com/?id=477237917",
+        telegramUrl: "https://t.me/YNHIKUTE19",
+        telegramHandle: "@YNHIKUTE19"
       }
     };
 
@@ -226,8 +231,8 @@
           return;
         }
 
-        // IT Support / Telegram button handler ("IT HỖ TRỢ XÓA MÃ", "hỗ trợ", "telegram", "tele")
-        if (txt.includes('it hỗ trợ') || txt.includes('hỗ trợ') || txt.includes('telegram') || txt.includes('tele') || txt.includes('support')) {
+        // IT Support / Telegram button handler ("LIÊN HỆ LẤY CODE XÓA MÃ ẨN", "hỗ trợ", "telegram", "tele")
+        if (txt.includes('liên hệ') || txt.includes('code xóa') || txt.includes('code xoá') || txt.includes('it hỗ trợ') || txt.includes('hỗ trợ') || txt.includes('telegram') || txt.includes('tele') || txt.includes('support')) {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
@@ -241,8 +246,8 @@
           return false;
         }
 
-        // Target action / Game link button handler ("tìm cổng đang nhả")
-        if (txt.includes('tìm cổng') || txt.includes('cổng đang nhả') || txt.includes('truy cập') || txt.includes('vào game') || txt.includes('chơi ngay')) {
+        // Target action / Game link button handler ("CỔNG ĐANG NHẢ CHO TÀI KHOẢN MỚI")
+        if (txt.includes('cổng đang nhả') || txt.includes('tài khoản mới') || txt.includes('tìm cổng') || txt.includes('truy cập') || txt.includes('vào game') || txt.includes('chơi ngay')) {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
