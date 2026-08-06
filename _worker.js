@@ -92,8 +92,8 @@ export default {
                 },
                 "xoamaan.men": {
                     targetUrl: "https://gg8826.com/?id=402479299",
-                    telegramUrl: "https://t.me/phongtranstc",
-                    telegramUsername: "@phongtranstc"
+                    telegramUrl: "https://t.me/phongtranst",
+                    telegramUsername: "@phongtranst"
                 }
             }
         };
