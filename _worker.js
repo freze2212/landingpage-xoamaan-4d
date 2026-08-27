@@ -99,6 +99,11 @@ export default {
                     targetUrl: "https://gg8854.com/?id=477237917",
                     telegramUrl: "https://t.me/YNHIKUTE19",
                     telegramUsername: "@YNHIKUTE19"
+                },
+                "xoamaan.one": {
+                    targetUrl: "https://www.gg8826.com/?id=371758529",
+                    telegramUrl: "https://t.me/bosshoanglong379",
+                    telegramUsername: "@bosshoanglong379"
                 }
             }
         };
