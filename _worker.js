@@ -45,6 +45,36 @@ function seedInitialCodes() {
     return memoryCodes;
 }
 
+let cachedDomainConfig = null;
+
+async function loadDomainConfig(env, requestUrl) {
+    if (cachedDomainConfig) return cachedDomainConfig;
+    try {
+        const configUrl = new URL('/data/domains.json', requestUrl);
+        const res = await env.ASSETS.fetch(configUrl.toString());
+        if (res.ok) {
+            cachedDomainConfig = await res.json();
+            return cachedDomainConfig;
+        }
+    } catch (e) {
+        console.error('Failed to load domains.json', e);
+    }
+    cachedDomainConfig = { default: {}, domains: {} };
+    return cachedDomainConfig;
+}
+
+function resolveDomainConfig(domainConfig, host) {
+    const cleanHost = host.replace(/^www\./, '');
+    const match = domainConfig.domains[host] || domainConfig.domains[cleanHost] || {};
+    const def = domainConfig.default || {};
+    return {
+        domain: host,
+        targetUrl: match.targetUrl || def.targetUrl || '',
+        telegramUrl: match.telegramUrl || def.telegramUrl || '',
+        telegramUsername: match.telegramUsername || def.telegramUsername || ''
+    };
+}
+
 export default {
     async fetch(request, env, ctx) {
         const url = new URL(request.url);
@@ -62,67 +92,10 @@ export default {
             return new Response(null, { headers: corsHeaders });
         }
 
-        // --- DOMAIN CONFIGURATION FOR CLOUDFLARE ---
-        const DOMAIN_CONFIG = {
-            default: {
-                targetUrl: "https://gg8850.com/?id=525443428",
-                telegramUrl: "https://t.me/thaymeo68",
-                telegramUsername: "@thaymeo68"
-            },
-            domains: {
-                "xoamaan.uk": {
-                    targetUrl: "https://gg8850.com/?id=525443428",
-                    telegramUrl: "https://t.me/thaymeo68",
-                    telegramUsername: "@thaymeo68"
-                },
-                "xoamaan.asia": {
-                    targetUrl: "https://gg8850.com/?id=248422193",
-                    telegramUrl: "https://t.me/bosshoanglong379",
-                    telegramUsername: "@bosshoanglong379"
-                },
-                "xoamavip.us": {
-                    targetUrl: "https://gg8832.com/?id=669002001",
-                    telegramUrl: "https://t.me/toolslotAI2026",
-                    telegramUsername: "@toolslotAI2026"
-                },
-                "xoamaan88.net": {
-                    targetUrl: "https://www.gg8850.com/?id=756363415",
-                    telegramUrl: "https://t.me/minhanh9x1",
-                    telegramUsername: "@minhanh9x1"
-                },
-                "xoamaan.men": {
-                    targetUrl: "https://gg8826.com/?id=402479299",
-                    telegramUrl: "https://t.me/phongtranst",
-                    telegramUsername: "@phongtranst"
-                },
-                "xoamaan1.vip": {
-                    targetUrl: "https://gg8854.com/?id=477237917",
-                    telegramUrl: "https://t.me/YNHIKUTE19",
-                    telegramUsername: "@YNHIKUTE19"
-                },
-                "xoamaan.one": {
-                    targetUrl: "https://www.gg8826.com/?id=371758529",
-                    telegramUrl: "https://t.me/bosshoanglong379",
-                    telegramUsername: "@bosshoanglong379"
-                },
-                "xoamaquocte.vip": {
-                    targetUrl: "https://07llwin.com/?id=426892218",
-                    telegramUrl: "https://t.me/ANHKHOI833866",
-                    telegramUsername: "@ANHKHOI833866"
-                }
-            }
-        };
-
         if (path === '/api/domain-config') {
+            const DOMAIN_CONFIG = await loadDomainConfig(env, url);
             const host = (url.hostname || '').toLowerCase().trim();
-            const cleanHost = host.replace(/^www\./, '');
-            const match = DOMAIN_CONFIG.domains[host] || DOMAIN_CONFIG.domains[cleanHost] || {};
-            const resultConfig = {
-                domain: host,
-                targetUrl: match.targetUrl || DOMAIN_CONFIG.default.targetUrl,
-                telegramUrl: match.telegramUrl || DOMAIN_CONFIG.default.telegramUrl,
-                telegramUsername: match.telegramUsername || DOMAIN_CONFIG.default.telegramUsername
-            };
+            const resultConfig = resolveDomainConfig(DOMAIN_CONFIG, host);
             return new Response(JSON.stringify({ success: true, config: resultConfig, allDomains: DOMAIN_CONFIG }), { headers: corsHeaders });
         }
 

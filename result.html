@@ -378,36 +378,17 @@
         </div>
     </div>
 
+    <script src="/domain-config.js"></script>
     <script>
-        // --- DOMAIN-BASED LINK ROUTING FOR CLOUDFLARE ---
-        const DEFAULT_TARGET_URL = 'https://gg8850.com/?id=525443428';
-        const DEFAULT_TELEGRAM_URL = 'https://t.me/thaymeo68';
-
-        const DOMAIN_CONFIG = {
-          "xoamaan.uk": { targetUrl: "https://gg8850.com/?id=525443428", telegramUrl: "https://t.me/thaymeo68" },
-          "xoamaan.asia": { targetUrl: "https://gg8850.com/?id=248422193", telegramUrl: "https://t.me/bosshoanglong379" },
-          "xoamavip.us": { targetUrl: "https://gg8832.com/?id=669002001", telegramUrl: "https://t.me/toolslotAI2026" },
-          "xoamaan88.net": { targetUrl: "https://www.gg8850.com/?id=756363415", telegramUrl: "https://t.me/minhanh9x1" },
-          "xoamaan.men": { targetUrl: "https://gg8826.com/?id=402479299", telegramUrl: "https://t.me/phongtranst" },
-          "xoamaan1.vip": { targetUrl: "https://gg8854.com/?id=477237917", telegramUrl: "https://t.me/YNHIKUTE19" },
-          "xoamaan.one": { targetUrl: "https://www.gg8826.com/?id=371758529", telegramUrl: "https://t.me/bosshoanglong379" },
-          "xoamaquocte.vip": { targetUrl: "https://www.09llwin.com/?id=426892218", telegramUrl: "https://t.me/ANHKHOI833866" }
-        };
-
-        window.getTargetUrl = function() {
-            const host = (window.location.hostname || "").toLowerCase().trim();
-            const cleanHost = host.replace(/^www\./, "");
-            const cfg = DOMAIN_CONFIG[host] || DOMAIN_CONFIG[cleanHost] || {};
-            return cfg.targetUrl || DEFAULT_TARGET_URL;
-        };
-
-        const btnLink = document.getElementById('btn-link');
-        if (btnLink) {
-            btnLink.href = window.getTargetUrl();
-            btnLink.addEventListener('click', function(e) {
-                this.href = window.getTargetUrl();
-            });
-        }
+        window.domainConfigReady.then(function () {
+            const btnLink = document.getElementById('btn-link');
+            if (btnLink) {
+                btnLink.href = window.getTargetUrl();
+                btnLink.addEventListener('click', function () {
+                    this.href = window.getTargetUrl();
+                });
+            }
+        });
 
         // --- BACKGROUND MA TRẬN (MATRIX DIGITAL RAIN) ---
         const canvas = document.getElementById('matrix');
