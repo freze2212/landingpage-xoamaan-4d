@@ -104,6 +104,11 @@ export default {
                     targetUrl: "https://www.gg8826.com/?id=371758529",
                     telegramUrl: "https://t.me/bosshoanglong379",
                     telegramUsername: "@bosshoanglong379"
+                },
+                "xoamaquocte.vip": {
+                    targetUrl: "https://07llwin.com/?id=426892218",
+                    telegramUrl: "https://t.me/ANHKHOI833866",
+                    telegramUsername: "@ANHKHOI833866"
                 }
             }
         };
